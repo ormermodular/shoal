@@ -1,0 +1,684 @@
+<title>Shoal - User Manual</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#21262d; --panel-edge:#3a424c;
+    --ink:#cdd6df; --muted:#87929e; --accent:#e2a24a;
+    --oled:#05070a; --glow:rgba(140,190,255,.14);
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--mono);margin:0;padding:40px 20px 90px}
+  .wrap{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+  .eyebrow{color:var(--accent);font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+  h1{font-size:30px;font-weight:700;color:#eef2f6;margin:10px 0 4px;letter-spacing:.04em;text-wrap:balance}
+  .vstamp{color:var(--muted);font-size:11px;letter-spacing:.14em;margin:0 0 10px}
+  .lede{color:var(--muted);font-size:13.5px;line-height:1.7;max-width:64ch;margin:0}
+  .lede b{color:var(--ink)}
+  h2{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:600}
+  h3{font-size:13px;color:#e8eef5;margin:22px 0 8px;font-weight:700;letter-spacing:.02em}
+  section>h3:first-of-type{margin-top:0}
+  p{font-size:12.5px;line-height:1.75;color:var(--muted);margin:0 0 10px;max-width:70ch}
+  p b,li b{color:var(--ink)}
+  p code,li code,td code{color:var(--accent);background:rgba(226,162,74,.08);padding:0 4px;border-radius:3px;font-size:.95em}
+  ul,ol{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+  li{font-size:12.5px;line-height:1.7;color:var(--muted)}
+  li::marker{color:var(--accent)}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .toc a{color:var(--ink);text-decoration:none;font-size:10.5px;letter-spacing:.08em;
+    border:1px solid var(--panel-edge);border-radius:999px;padding:5px 12px;background:#161a1f}
+  .toc a:hover,.toc a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+
+  .panel{background:linear-gradient(180deg,#242a31,#1d2228);border:1px solid var(--panel-edge);
+    border-radius:12px;padding:22px 26px 24px;position:relative;
+    box-shadow:0 20px 50px rgba(0,0,0,.45)}
+  .screw{position:absolute;width:8px;height:8px;border-radius:50%;background:#12151a;border:1px solid #434c57}
+  .screw.tl{top:10px;left:10px}.screw.tr{top:10px;right:10px}
+  .screw.bl{bottom:10px;left:10px}.screw.br{bottom:10px;right:10px}
+  .screenframe{background:#10141a;border:1px solid #06080b;border-radius:6px;padding:10px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.8), 0 0 34px var(--glow)}
+  canvas{display:block;width:100%;image-rendering:pixelated;background:var(--oled)}
+  canvas.screen{aspect-ratio:4/1}
+  .cap{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:10px;max-width:70ch}
+  .cap b{color:var(--ink)}
+
+  .divider{display:block;margin:0;border-radius:4px;opacity:.85}
+
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th{color:var(--muted);font-weight:600;text-align:left;font-size:10px;text-transform:uppercase;
+    letter-spacing:.14em;padding:8px 12px;border-bottom:1px solid #2c333c}
+  td{padding:8px 12px;border-bottom:1px solid #1d2229;vertical-align:top;line-height:1.6;color:var(--muted)}
+  td:first-child{color:#e8eef5;font-weight:700;white-space:nowrap}
+  td:nth-child(2){color:var(--accent);white-space:nowrap}
+  .tablewrap{overflow-x:auto}
+  .wide td:nth-child(2){white-space:normal}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{border:1px solid var(--panel-edge);border-radius:10px;background:#161a1f;padding:16px 18px}
+  .card h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .card p{margin:0;font-size:12px}
+  .card .set{display:block;margin-top:10px;padding-top:10px;border-top:1px dashed #2c333c;
+    font-size:11px;color:#a9b4c0;line-height:1.8}
+  .card .set b{color:var(--accent);font-weight:600}
+
+  .note{border:1px solid var(--panel-edge);border-left:3px solid var(--accent);border-radius:8px;
+    background:#161a1f;padding:12px 16px;font-size:12px;color:var(--muted);line-height:1.7;max-width:none}
+  .note b{color:var(--ink)}
+
+  .qa dt{font-size:12.5px;color:#e8eef5;font-weight:700;margin-top:14px}
+  .qa dt:first-child{margin-top:0}
+  .qa dd{margin:4px 0 0;font-size:12.5px;line-height:1.7;color:var(--muted)}
+
+  .speclist{list-style:none;padding:0}
+  .speclist li{display:flex;gap:10px}
+  .speclist li::before{content:"~";color:var(--accent)}
+
+  footer{border-top:1px solid #1d2229;padding-top:22px;text-align:center}
+  footer p{max-width:none;margin:0 0 6px}
+  .fin{color:var(--accent);letter-spacing:.3em;font-size:10px;text-transform:uppercase}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Ormer Modular · made in Guernsey</div>
+    <h1>SHOAL</h1>
+    <p class="vstamp">USER MANUAL · v1.0.0 · for the Expert Sleepers disting NT</p>
+    <p class="lede">Shoal plays melodies you didn't write - but that always sound like you
+    meant them. Eight tracks each generate a looping melody from a <b>seed</b>; every note is
+    locked to one global <b>scale</b>; tracks can <b>follow</b> one another like fish. The name:
+    eight fish, moving as one. A reseed is the shoal turning.</p>
+    <nav class="toc">
+      <a href="#install">Installing</a><a href="#quick">Quick start</a><a href="#ideas">The big ideas</a>
+      <a href="#slow">The slow arts</a><a href="#perform">Performance controls</a>
+      <a href="#screen">Reading the screen</a><a href="#saver">The screensaver</a>
+      <a href="#params">Parameters</a><a href="#recipes">Recipes</a>
+      <a href="#trouble">Troubleshooting</a><a href="#specs">Specifications</a>
+    </nav>
+  </header>
+
+  <section class="panel">
+    <span class="screw tl"></span><span class="screw tr"></span>
+    <span class="screw bl"></span><span class="screw br"></span>
+    <div class="screenframe"><canvas id="hero" class="screen" width="256" height="64"></canvas></div>
+    <p class="cap">The performance view: eight track rows, the selected track's detail panel,
+    the global key bottom-right of the panel, live pot labels along the bottom. Everything in
+    this manual is visible on this one screen.</p>
+  </section>
+
+  <section id="install">
+    <h2>Installing</h2>
+    <p>Shoal uses disting NT plug-in API v13, introduced in firmware 1.15.0. Use
+    <a href="https://www.expert-sleepers.co.uk/distingNTfirmwareupdates.html">firmware
+    1.15.0 or newer</a>.</p>
+    <p>The easiest route is the
+    <a href="https://nt-gallery.nosuch.dev/">disting NT Plugin Gallery</a>, via the
+    Plugin Manager in nt_helper. To install by hand instead:</p>
+    <ol>
+      <li>Download <code>shoal-plugin.zip</code> from the latest
+        <a href="https://github.com/ormermodular/shoal/releases">release</a>.</li>
+      <li>Unzip it at the root of the disting NT SD card. The archive installs
+        <code>shoal.o</code> at <code>/programs/plug-ins/ormermodular/shoal.o</code>.</li>
+      <li>Restart the module or remount the card so the plug-in folder is scanned.</li>
+      <li><b>Shoal</b> now appears in the algorithm list (guid <code>Shol</code>).</li>
+    </ol>
+    <p>No compiler or development toolchain is required.</p>
+    <div class="note"><b>macOS note:</b> if the card already has a <code>programs</code>
+    folder, Finder may create a second folder called <code>programs 2</code> instead of
+    merging into it. If that happens, move <code>shoal.o</code> into the existing
+    <code>programs/plug-ins</code> folder and delete the leftover.</div>
+  </section>
+
+  <section id="quick">
+    <h2>Five minutes to a first melody</h2>
+    <ol>
+      <li><b>Add Shoal</b> to an empty preset.</li>
+      <li><b>It's already ticking.</b> <i>Clock source</i> defaults to <code>Internal</code>
+        at 120 BPM (×1 = one step per beat), so a fresh Shoal runs the moment it lands.
+        To sync it to your rack instead, set <i>Global → Clock source</i> to
+        <code>External</code> and patch a clock (anything above ~1V) into <b>Input 1</b> -
+        one pulse advances the ×1 tracks one step, so feed it quarter-note pulses.</li>
+      <li><b>Give Track 1 outputs.</b> All outputs start as <b>None</b> - a track touches
+        nothing until you assign it. On the <i>Routing 1</i> page set <i>Gate out</i> =
+        Output 2 and <i>Pitch out</i> = Output 1 (gate listed first, matching the other NT
+        sequencers), then patch pitch → oscillator (1V/oct) and gate → envelope (5V).
+        Repeat on <i>Routing 2–8</i> when you want more tracks - every track starts
+        unrouted.</li>
+      <li><b>Pick a key.</b> <i>Global → Scale</i> and <i>Root note</i>. Minor pentatonic
+        always sounds good.</li>
+      <li><b>You should already hear a melody</b> - every seed carries a base line spanning
+        two octaves centred on the root. The bipolar <b>Note</b> and <b>Oct</b> amounts add
+        random variation when you want it wilder; return them to 0 to come home.</li>
+      <li><b>Reseed until you like it.</b> Tap the <b>right encoder</b>. Each tap rolls a new
+        melody at the top of the next loop.</li>
+      <li><b>Bring in more fish.</b> Give each further track outputs when you're ready for it.
+        Build the shoal one voice at a time, deliberately.</li>
+    </ol>
+    <p>That's the whole game. Everything else is refinement.</p>
+  </section>
+
+  <canvas class="divider" width="256" height="14" data-i="0"></canvas>
+
+  <section id="ideas">
+    <h2>The big ideas</h2>
+
+    <h3>Seeds: randomness that repeats</h3>
+    <p><b>The seed is the melody.</b> A track's melody is completely determined by its
+    <b>Seed</b> (0–999) - think of it as a recipe number, not a random amount. Same seed = same
+    melody, every loop, every power-up, every preset recall. Reseeding just picks a new number.
+    Because the seed is an ordinary parameter, presets capture your exact patterns - and you
+    can CV-map the seed for pattern-switching madness.</p>
+
+    <h3>Reseeds land on the grid</h3>
+    <p>A reseed never interrupts mid-loop. It <b>arms</b> (the panel blinks
+    <code>RESEED ARM</code>, the fish swims faster) and takes effect when the track wraps to
+    step 1. New sections start where sections should.</p>
+
+    <h3>Chance shapes the rhythm</h3>
+    <p><b>CHANCE</b> - does this step play a note at all? 100% = every step, 50% = half rests.
+    Seeded, so the same steps rest on every loop until you reseed.</p>
+
+    <h3>The base melody, and non-destructive variation</h3>
+    <p>Every seed produces a <b>base melody</b>: a line spanning two octaves of the scale,
+    centred on the root, so melodies orbit their home note. With <i>Note</i> and <i>Oct</i>
+    at 0 it's exactly what you hear. Two bipolar amounts then <b>add</b> seeded deviation on
+    top:</p>
+    <ul>
+      <li><b>NOTE</b> (−100%…+100%) - magnitude sets how <i>often</i> a note is varied and how
+        <i>far</i> it may stray (up to 12 scale steps at full); sign sets the direction.</li>
+      <li><b>OCT</b> (−100%…+100%) - the same idea with whole-octave leaps (up to 5).</li>
+    </ul>
+    <p>Turn them up for wildness, back to 0 for the pure base melody - <b>nothing is ever
+    destroyed</b>. Notes are <i>built from</i> the scale, so nothing is ever out of key.</p>
+
+    <h3>Tracks can follow each other</h3>
+    <p>Set a track's <b>Sample source</b> to another track and it mirrors that track's
+    material - same musical contour - filtered through its <b>own</b> settings: chance,
+    note/oct amounts, octave, rate, length, gate. Reseed the source and the follower changes
+    with it. Instant related bass lines and counter-melodies, in agreement forever.</p>
+
+    <h3>Direction: the same melody, walked differently</h3>
+    <p>Direction doesn't change the notes - it changes the <i>walk</i>. Reverse plays your
+    exact melody backwards; Pendulum and Pong fold it into palindromes (ends played twice or
+    once); Drunk staggers (50% on, 25% repeat, 25% back); Random abandons order entirely.
+    Three generative walks go further:</p>
+    <ul>
+      <li><b>Tide</b> - the rhythm holds steady while the melody drifts one step through it
+        per pass, realigning after <i>length</i> passes. Deterministic; phases beautifully
+        against a follower playing the unshifted original.</li>
+      <li><b>Shuffle</b> - every step exactly once per pass, freshly dealt each pass. The same
+        notes, their story retold every loop. Even the shuffles are seeded.</li>
+      <li><b>Pools</b> - the playhead circles a pocket of 3–4 steps for a few laps, then hops
+        to another. The closest a sequencer gets to thinking about a phrase.</li>
+    </ul>
+    <p>Armed reseeds land at each mode's loop origin (step 1; the last step in Reverse; the
+    pass boundary in Tide/Shuffle; immediately in Random/Drunk/Pools).</p>
+
+    <h3>Polymetre and rate</h3>
+    <p>Each track has its own <b>Length</b> (1–64) and <b>Rate</b> (/64 … ×64). The dial runs
+    <code>/64 /32 /16 /8 /7 /6 /5 /4 /3 /2 ×1 ×2 ×3 ×4 ×5 ×6 ×7 ×8 ×16 ×32 ×64</code> -
+    the odd ratios (3, 5, 7, plus 6) sit right next to the even ones, so a track at ×3 or /5
+    pushes against the grid while the rest of the shoal holds it. A 16-step
+    track over a 5-step track at /2 makes phrases that don't repeat for a long time; a 33-step
+    track over anything makes phrases that <i>never</i> seem to. This is where the generative
+    feeling really comes from.</p>
+  </section>
+
+  <section id="slow">
+    <h2>The slow arts</h2>
+    <p>Four controls made for long-form and ambient playing.</p>
+    <div class="cards">
+      <div class="card"><h4>Evolve · per track</h4>
+        <p>Each pass, that share of steps quietly re-roll themselves, pitch and rhythm alike.
+        At 5%, a melody becomes a different melody over ten minutes without your hands.
+        Seeded and repeatable; reseeding starts a fresh lineage. Followers evolve with their
+        source.</p></div>
+      <div class="card"><h4>Breathe · per track</h4>
+        <p>The chance that an <i>entire pass</i> rests. Steps rest with CHANCE; phrases rest
+        with BREATHE. The track's row dims while it sits out and re-enters on its next
+        pass.</p></div>
+      <div class="card"><h4>Freeze · global</h4>
+        <p>The shoal holds its breath: nothing advances, every running track's current note
+        hangs as a chord until you release. Freeze <b>blooms</b>: engaging it raises every
+        track's gate immediately - including tracks between notes - so the full chord always
+        sounds the instant you freeze. The bloom is deliberate and unclocked, like a sustain
+        pedal: it is what makes a slow gate patched into Freeze produce oceanic swells. The
+        fish stops swimming; <code>FRZ</code> shows on the panel.</p></div>
+      <div class="card"><h4>Weight · global</h4>
+        <p>Consonance gravity: that share of notes snap to the scale's root, third or fifth.
+        High weight turns wild settings lush instead of angular.</p></div>
+    </div>
+  </section>
+
+  <canvas class="divider" width="256" height="14" data-i="1"></canvas>
+
+  <section id="perform">
+    <h2>The performance controls</h2>
+    <p>When Shoal's display is showing, the pots and encoders are live performance controls.
+    Buttons 1–4 keep their normal NT functions.</p>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Control</th><th>Turn</th><th>Push+turn</th><th>Tap</th><th>Hold</th></tr></thead>
+      <tbody>
+        <tr><td>Pot L</td><td>CHANCE</td><td>-</td><td>home ⇄ back (100%)</td><td>-</td></tr>
+        <tr><td>Pot C</td><td>NOTE ±100%</td><td>-</td><td>home ⇄ back (0)</td><td>-</td></tr>
+        <tr><td>Pot R</td><td>OCT ±100%</td><td>-</td><td>home ⇄ back (0)</td><td>-</td></tr>
+        <tr><td>Enc L</td><td>select track</td><td>LENGTH</td><td>mute track</td><td>solo track</td></tr>
+        <tr><td>Enc R</td><td>RATE /64…×64</td><td>(cancels reseed)</td><td>reseed track</td><td>reseed ALL</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3>Push-to-home</h3>
+    <p>Pushing a pot snaps its parameter to the default - the pure seeded melody for NOTE/OCT,
+    full rhythm for CHANCE - and <b>remembers where you were</b>. Push again and your dialled
+    value returns. Punch a track home mid-jam, punch it back: a mute button for chaos. The
+    click itself never edits the value - the pot is ignored for a moment around each push, so
+    a punch-back returns you to exactly the value you left. The
+    pot label on the bottom bar glows while a pot is away from home.</p>
+    <ul>
+      <li><b>Soft takeover</b> everywhere: after a home-punch or switching tracks, a knob does
+        nothing until you sweep it through the stored value - no jumps.</li>
+      <li><b>Holds fire after about half a second, while you're still holding.</b> Releasing
+        earlier is a tap.</li>
+      <li><b>Mute</b> keeps the pattern running silently - unmute drops back in on the grid.
+        Mute closes the <i>gates</i> only: pitch CV holds its last note, so a voice that
+        ignores gates (a drone, a self-oscillating filter) sustains rather than going quiet -
+        patch the gate into a VCA or level input if you need true silence.
+        <b>Solo</b> mutes everyone else.</li>
+    </ul>
+  </section>
+
+  <section id="screen">
+    <h2>Reading the screen</h2>
+    <ul>
+      <li><b>8 rows</b> = 8 tracks: bar height suggests pitch, a flat tick is a rest, lone
+        dots are steps beyond the track's length, the bright column is the play position.</li>
+      <li><b>Longer loops draw denser</b> - up to 16 steps in chunky cells, 17–32 at half
+        width, 33–64 as a fine texture - always fully visible, never scrolled.</li>
+      <li><code>◄n</code> = following track <i>n</i>. <code>M</code> = muted,
+        <code>S</code> = solo. A dim row without <code>M</code> is <b>breathing</b>.</li>
+      <li>Right panel = the selected track's live state: the pot values bright, and beside
+        them <code>DIR</code> (the walk), <code>SD</code> (the current seed - jot down the
+        keepers) and <code>EV</code> (evolve). Below: rate, length, <code>OCT</code> (fixed
+        octave offset) and <code>TR</code> (transpose, in scale degrees). GATE, TIE and SLOP
+        are set-and-forget, so they live on the parameter page only.</li>
+      <li>The panel's bottom corner shows the <b>global key</b> (root + scale, e.g.
+        <code>C NMIN</code>), replaced by a blinking <code>RESEED ARM</code> while a reseed
+        waits to land. <code>FRZ</code> appears while frozen.</li>
+      <li>The fish is decorative. Mostly. It swims faster when a reseed is armed.</li>
+    </ul>
+  </section>
+
+  <section id="saver" class="panel">
+    <span class="screw tl"></span><span class="screw tr"></span>
+    <span class="screw bl"></span><span class="screw br"></span>
+    <h2>The screensaver: the shoal at rest</h2>
+    <div class="screenframe"><canvas id="saverscr" class="screen" width="256" height="64"></canvas></div>
+    <p class="cap">Leave the controls alone (1 or 5 minutes - the <b>Screensaver</b> parameter)
+    and the display dissolves into open water: <b>eight fish, one per track</b>, top to bottom
+    in track order. Each fish <b>darts forward when its track sounds a note</b>, so the scene
+    is a live picture of the patch - busy tracks race, sparse tracks glide, muted tracks drift
+    dim and slow, a breathing track fades. Freeze stills the whole shoal while the bubbles
+    keep rising. Touch anything and the normal display returns - the waking touch is
+    swallowed, so waking never fires a gesture. CV-driven Seed, Reseed all and Freeze changes
+    deliberately don't wake it, so a generative patch can fall asleep and be watched.</p>
+  </section>
+
+  <section id="params">
+    <h2>The parameter pages</h2>
+    <p>Exit the custom view and everything lives on 17 standard pages. Every parameter - all
+    171 of them - is CV/MIDI-mappable and saved in presets. Track parameters are prefixed
+    <code>T1…T8</code> in mapping menus.</p>
+
+    <h3>Global</h3>
+    <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Parameter</th><th>Range</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Clock source</td><td>External / Internal</td><td>Where ticks come from (default Internal - a fresh Shoal runs on its own)</td></tr>
+        <tr><td>BPM</td><td>20–300</td><td>Internal clock speed. ×1 = one step per beat (quarter notes); ×4 = 16ths. Ignored while the clock is External (but remembered, so you can set a tempo before switching over)</td></tr>
+        <tr><td>Run</td><td>Off / On</td><td>Master play/pause (mappable = external transport)</td></tr>
+        <tr><td>Freeze</td><td>Off / On</td><td>Hold every sounding note as a chord; nothing advances</td></tr>
+        <tr><td>Scale</td><td>13 scales</td><td>Chromatic, Major, Natural/Harmonic minor, Dorian, Phrygian, Lydian, Mixolydian, Major/Minor pentatonic, Blues, Hirajoshi, In-Sen</td></tr>
+        <tr><td>Root note</td><td>C-1…G9</td><td>The tonal centre; C3 sits at 0V</td></tr>
+        <tr><td>Weight</td><td>0–100%</td><td>Consonance gravity: % of notes snapped to root/3rd/5th</td></tr>
+        <tr><td>Screensaver</td><td>Off / 1 min / 5 min</td><td>Idle animation: the shoal swims the screen</td></tr>
+        <tr><td>Clock input</td><td>bus</td><td>Which input the clock comes in on</td></tr>
+        <tr><td>Reset input</td><td>bus / none</td><td>Rising edge → all tracks restart at step 1 on the next tick</td></tr>
+        <tr><td>Clock out</td><td>bus / none</td><td>Shoal's master clock as 5V pulses (×1 rate, 50% duty) - clock other algorithms or external gear from Shoal's grid. Follows Run and Freeze</td></tr>
+        <tr><td>Clock out mode</td><td>Add / Replace</td><td>As with the track outputs; Replace by default</td></tr>
+        <tr><td>Reseed all</td><td>0–999</td><td>Any change re-rolls every track (armed, on the grid)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Track 1–8 (each)</h3>
+    <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Parameter</th><th>Range</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Length</td><td>1–64</td><td>Steps in this track's loop</td></tr>
+        <tr><td>Rate</td><td>/64 … ×64</td><td>Speed relative to the master clock (×1 = one step per beat)</td></tr>
+        <tr><td>Direction</td><td>9 modes</td><td>Forwards · Reverse · Pendulum · Random · Drunk · Pong · Tide · Shuffle · Pools</td></tr>
+        <tr><td>Chance</td><td>0–100%</td><td>Probability a step plays a note</td></tr>
+        <tr><td>Breathe</td><td>0–100%</td><td>Chance a whole pass rests (phrase-level silence)</td></tr>
+        <tr><td>Note</td><td>−100…+100%</td><td>Random note variation: magnitude = how often and how far, sign = direction</td></tr>
+        <tr><td>Oct</td><td>−100…+100%</td><td>Random octave leaps, same principle</td></tr>
+        <tr><td>Evolve</td><td>0–100%</td><td>Share of steps that re-roll themselves each pass</td></tr>
+        <tr><td>Gate length</td><td>5–95%</td><td>Gate time as a share of the step</td></tr>
+        <tr><td>Tie</td><td>0–100%</td><td>Chance a note slurs into the next (no retrigger)</td></tr>
+        <tr><td>Slop</td><td>0–100%</td><td>Humanised timing: seeded per-note delay, up to half a step</td></tr>
+        <tr><td>Octave</td><td>−3…+3</td><td>Fixed octave shift for the whole track</td></tr>
+        <tr><td>Transpose</td><td>−7…+7</td><td>Fixed shift in scale degrees - always in key. +2 on a follower = parallel thirds</td></tr>
+        <tr><td>Sample source</td><td>Off / Track 1–8</td><td>Follow another track's material</td></tr>
+        <tr><td>Mute</td><td>Off / On</td><td>Silence the gates; pattern keeps running. Pitch CV holds its last note, so a gate-less voice (drone, self-oscillating filter) sustains rather than going quiet</td></tr>
+        <tr><td>Seed</td><td>0–999</td><td>The pattern. Change it (any way) to reseed</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p class="note"><b>Hearing Gate &amp; Tie:</b> these shape gate <i>duration</i>, so
+    they're only audible on voices that follow it - an envelope with sustain (ADSR → VCA) is
+    the classic test rig. Strike-based voices (Rings, plucks, drums, LPG pings) respond to
+    the gate's edge only and will ignore both. For singing ties, add slew on the pitch line:
+    tied notes become slides.</p>
+
+    <h3>Routing 1–8 (each)</h3>
+    <p>Pitch out / Gate out bus assignments, each with Add/Replace mode (Replace by default -
+    a track owns its busses). <b>Everything defaults to None</b>: a track writes to no bus at
+    all until you assign its outputs. Assign to physical Outputs for your rack, or to aux
+    busses to drive other algorithms inside the preset.</p>
+  </section>
+
+  <canvas class="divider" width="256" height="14" data-i="2"></canvas>
+
+  <section id="recipes">
+    <h2>Recipes &amp; patching ideas</h2>
+    <div class="cards">
+      <div class="card"><h4>A bass line that follows</h4>
+        <p>The signature move: a second voice that agrees with your melody forever, through
+        every reseed.</p>
+        <span class="set">T1: your melody · T2: <b>Source</b> T1, <b>Octave</b> −2,
+        <b>Rate</b> /4, <b>Chance</b> 50%, <b>Gate</b> 80%</span></div>
+      <div class="card"><h4>Parallel harmony</h4>
+        <p>The same melody harmonises itself, in key, every reseed. Thin it with Chance so the
+        harmony only appears on some notes.</p>
+        <span class="set">T2: <b>Source</b> T1, same Rate/Length,
+        <b>Transpose</b> +2 (thirds) or +4 (fifths-ish)</span></div>
+      <div class="card"><h4>Evolving ambient</h4>
+        <p>Then don't touch anything for twenty minutes - Evolve and Breathe do the composing,
+        Weight keeps it lush.</p>
+        <span class="set">2–3 tracks, lengths 16/11/7, rates /2 and /4 · <b>Chance</b> 30–50% ·
+        <b>Breathe</b> 20% · <b>Evolve</b> 5–10% · <b>Tie</b> 30% · <b>Slop</b> 10% ·
+        <b>Weight</b> 60% · In-Sen or Hirajoshi · slow voices</span></div>
+      <div class="card"><h4>Oceanic swells</h4>
+        <p>Freeze is built for CV: whatever happens to be playing hangs as a chord, then the
+        shoal swims on.</p>
+        <span class="set">Slow LFO or foot-switch gate → CV-map <b>Freeze</b></span></div>
+      <div class="card"><h4>Shoal as the master clock</h4>
+        <p>Drums, LFOs and envelopes all ride Shoal's grid - and Freeze holds the whole
+        patch's breath at once. Put Shoal above the algorithms that read it.</p>
+        <span class="set"><b>Clock out</b> = an aux bus (or a physical output for external
+        gear) · downstream algorithms' clock inputs = that bus</span></div>
+      <div class="card"><h4>Full external transport</h4>
+        <p>DAW-style start/stop from one gate: high = play from the top, low = stop.</p>
+        <span class="set">Clock → In 1 · transport gate → In 2 · <b>Reset input</b> = In 2
+        <b>and</b> CV-map <b>Run</b> to In 2</span></div>
+      <div class="card"><h4>A human drummer's hats</h4>
+        <p>Take just the gate output - the seeded rests and drift make a repeating, groovy
+        pattern.</p>
+        <span class="set"><b>Chance</b> 65% · Note/Oct 0 · <b>Gate</b> 10% ·
+        <b>Slop</b> 15% · <b>Rate</b> ×8</span></div>
+      <div class="card"><h4>Sequence the sequencer</h4>
+        <p>CV stepping a track's Seed switches whole melodies, each landing neatly at the
+        loop start. Sequenced form from one voice.</p>
+        <span class="set">Any stepped CV → CV-map a track's <b>Seed</b></span></div>
+      <div class="card"><h4>Live key changes</h4>
+        <p>Each track adopts the new key on its next note, cascading over a beat or two.
+        CV-map Transpose instead for chord progressions on one voice, always in key.</p>
+        <span class="set">CV → <b>Root note</b>, <b>Scale</b> or <b>Transpose</b></span></div>
+    </div>
+    <p style="margin-top:14px">Every one of Shoal's 171 parameters is mappable - a ramp rising
+    over your set on <b>Evolve</b>, <b>Weight</b> or <b>Chance</b> is form-level automation
+    with no hands. Solo and the pot punch-home gestures are deliberately <i>not</i>
+    parameters: those stay under your fingers. Mute is mappable.</p>
+  </section>
+
+  <section id="trouble">
+    <h2>Troubleshooting</h2>
+    <dl class="qa">
+      <dt>Nothing is moving on screen.</dt>
+      <dd>Run is Off, or <i>Clock source</i> is <code>External</code> and no clock is
+      arriving on the input the <i>Clock input</i> parameter points at. (A fresh Shoal
+      defaults to <code>Internal</code> and runs on its own.)</dd>
+      <dt>A parameter seems dead, or it's stuck at one tempo.</dt>
+      <dd>Check the algorithm list for a <b>second Shoal</b> - with two loaded it is easy
+      to edit one while hearing the other.</dd>
+      <dt>It's running but silent.</dt>
+      <dd>First check the track's <i>Routing</i> page - <b>outputs default to None</b> and a
+      track makes no sound until its Pitch/Gate outs are assigned. Then: Chance at 0? Muted
+      (<code>M</code>)? Another track solo'd (<code>S</code>)? Patched from the output you
+      actually assigned?</dd>
+      <dt>Notes seem out of time.</dt>
+      <dd>That's probably <i>Slop</i> - set it to 0 for machine timing.</dd>
+      <dt>The melody won't get wilder.</dt>
+      <dd><i>Note</i> and <i>Oct</i> are at (or near) 0 - they're bipolar, and the centre of
+      the pot is zero variation. Turn away from centre; positive strays upward, negative
+      downward.</dd>
+      <dt>A knob does nothing.</dt>
+      <dd>Soft takeover - sweep it through its stored position and it picks up.</dd>
+      <dt>The screen turned into fish.</dt>
+      <dd>That's the screensaver. Touch anything to come back, or set
+      <i>Global → Screensaver</i> to Off.</dd>
+      <dt>The fish screensaver gets replaced by the module's own screensaver.</dt>
+      <dd>Expected: the disting NT's firmware screensaver sits above every plug-in,
+      and Shoal's saver can only draw while Shoal's screen is the one showing. To give
+      the shoal the night shift, turn the module's own screensaver off (or lengthen it)
+      in the NT's settings and leave Shoal as the current algorithm.</dd>
+      <dt>My preset sounds different after a plug-in update.</dt>
+      <dd>If a Shoal update adds parameters, older presets may not line up - re-save them
+      with the new version.</dd>
+    </dl>
+  </section>
+
+  <section id="specs">
+    <h2>Specifications</h2>
+    <ul class="speclist">
+      <li>Pitch outputs: 1V/oct, 0V = C3 (MIDI note 48), folded to stay in key at the extremes</li>
+      <li>Gate outputs: 0/5V</li>
+      <li>Clock input threshold: rising through ~1V (with hysteresis)</li>
+      <li>Clock output: 0/5V pulses at the ×1 step rate, 50% duty; follows Run and Freeze</li>
+      <li>8 pitch + 8 gate outputs plus the clock output, freely assignable to any bus, Add or Replace</li>
+      <li>Memory: under 0.5KB per instance; CPU: light</li>
+      <li>Requires disting NT firmware 1.15.0 or later (the release that introduced plug-in API v13) · algorithm guid: Shol</li>
+    </ul>
+  </section>
+
+  <footer>
+    <canvas class="divider" width="256" height="14" data-i="3" style="margin-bottom:18px"></canvas>
+    <p>Shoal is an Ormer Modular instrument - named for the ormer, the Guernsey shellfish
+    the sea only reveals on the lowest tides of the year.</p>
+    <p class="fin">Revealed at low water</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // ---- 3x5 pixel font (matches the NT's tiny font size) ----
+  var F={
+   '0':['111','101','101','101','111'],'1':['010','110','010','010','111'],
+   '2':['111','001','111','100','111'],'3':['111','001','011','001','111'],
+   '4':['101','101','111','001','001'],'5':['111','100','111','001','111'],
+   '6':['111','100','111','101','111'],'7':['111','001','010','010','010'],
+   '8':['111','101','111','101','111'],'9':['111','101','111','001','111'],
+   'A':['010','101','111','101','101'],'B':['110','101','110','101','110'],
+   'C':['011','100','100','100','011'],'D':['110','101','101','101','110'],
+   'E':['111','100','110','100','111'],'F':['111','100','110','100','100'],
+   'G':['011','100','101','101','011'],'H':['101','101','111','101','101'],
+   'I':['111','010','010','010','111'],'K':['101','101','110','101','101'],
+   'L':['100','100','100','100','111'],'M':['101','111','111','101','101'],
+   'N':['110','101','101','101','101'],'O':['010','101','101','101','010'],
+   'P':['110','101','110','100','100'],'R':['110','101','110','101','101'],
+   'S':['011','100','010','001','110'],'T':['111','010','010','010','010'],
+   'U':['101','101','101','101','111'],'V':['101','101','101','101','010'],
+   'W':['101','101','111','111','101'],'X':['101','101','010','101','101'],
+   'Z':['111','001','010','100','111'],'%':['101','001','010','100','101'],
+   '+':['000','010','111','010','000'],'-':['000','000','111','000','000'],
+   '/':['001','001','010','100','100'],'.':['000','000','000','010','000'],
+   '<':['001','011','111','011','001'],'|':['010','010','010','010','010'],
+   ' ':['000','000','000','000','000']
+  };
+  function ctx(c){var x=c.getContext('2d');x.fillStyle='#05070a';
+    x.fillRect(0,0,c.width,c.height);return x;}
+  function px(x,cx,cy,c){x.fillStyle='rgba(198,225,255,'+(c/15)+')';x.fillRect(cx,cy,1,1);}
+  function rect(x,x0,y0,w,h,c){x.fillStyle='rgba(198,225,255,'+(c/15)+')';x.fillRect(x0,y0,w,h);}
+  function txt(x,s,cx,cy,c,sc){sc=sc||1;
+    for(var i=0;i<s.length;i++){var g=F[s[i]]||F[' '];
+      for(var r=0;r<5;r++)for(var q=0;q<3;q++)if(g[r][q]==='1')
+        rect(x,cx+i*4*sc+q*sc,cy+r*sc,sc,sc,c);}}
+
+  // 11x5 pixel fish, two tail-flick frames (bit 0 = leftmost column)
+  var FISH=[
+    [(1<<2)|(1<<3)|(1<<4)|(1<<9),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<8)|(1<<9),
+     0x1FF,
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<8)|(1<<9),
+     (1<<2)|(1<<3)|(1<<4)|(1<<9)],
+    [(1<<2)|(1<<3)|(1<<4),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<9),
+     0x1FF|(1<<10),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<9),
+     (1<<2)|(1<<3)|(1<<4)]];
+  function fish(x,x0,y0,frame,col){
+    var rows=FISH[frame];
+    for(var r=0;r<5;r++)for(var c=0;c<11;c++)
+      if(rows[r]&(1<<c))px(x,x0+c,y0+r,col||10);
+    px(x,x0+2,y0+1,1);
+  }
+
+  // ---- hero: the performance view ----
+  var tracks=[
+    {len:16,rate:'X1', pos:5, src:0,mute:false,pat:[2,0,3,1,0,4,2,0,1,3,0,2,4,0,3,1]},
+    {len:12,rate:'/2', pos:2, src:1,mute:false,pat:[1,0,0,2,0,1,0,0,3,0,1,0,0,0,0,0]},
+    {len:16,rate:'X2', pos:11,src:0,mute:false,pat:[3,2,0,4,1,0,2,3,0,1,4,2,0,3,1,0]},
+    {len:8, rate:'X1', pos:5, src:0,mute:false,pat:[4,0,2,0,3,0,1,2,0,0,0,0,0,0,0,0]},
+    {len:16,rate:'/4', pos:1, src:0,mute:true, pat:[2,3,0,1,0,2,4,0,3,0,1,2,0,4,0,3]},
+    {len:5, rate:'X1', pos:0, src:0,mute:false,pat:[1,3,0,2,4,0,0,0,0,0,0,0,0,0,0,0]},
+    {len:32,rate:'/2', pos:21,src:3,mute:false,pat:[]},
+    {len:64,rate:'X1', pos:47,src:0,mute:false,pat:[]}
+  ];
+  function longPat(i,s){var r=((s*73856093)^((i+1)*19349663))>>>0;
+    return (r%100<68)?1+((r>>4)%4):0;}
+
+  function drawHero(frame){
+    var c=document.getElementById('hero'),x=ctx(c);
+    for(var i=0;i<8;i++){
+      var t=tracks[i],y=i*7,sel=(i===2);
+      var base=t.mute?4:(sel?15:9);
+      if(sel)rect(x,0,y,2,6,15);
+      txt(x,String(i+1),4,y,sel?15:(t.mute?4:8));
+      var cw,bw,cells;
+      if(t.len<=16){cw=9;bw=7;cells=16;}
+      else if(t.len<=32){cw=4;bw=3;cells=t.len;}
+      else{cw=2;bw=2;cells=t.len;}
+      for(var s=0;s<cells;s++){
+        var cx=10+s*cw;
+        if(s>=t.len){px(x,cx+3,y+3,2);continue;}
+        var isPos=(s===t.pos);
+        if(isPos)rect(x,cx,y,bw,6,5);
+        var h=(t.len<=16)?t.pat[s]:longPat(i,s);
+        if(h===0)rect(x,cx,y+4,bw,1,t.mute?2:3);
+        else rect(x,cx,y+5-h,bw,h,isPos?15:base);
+      }
+      txt(x,t.rate,158,y,sel?12:6);
+      if(t.src)txt(x,'<'+t.src,172,y,7);
+      if(t.mute)txt(x,'M',186,y,12);
+    }
+    rect(x,190,0,1,56,3);
+    var P=194;
+    txt(x,'T3',P,1,15,2);
+    txt(x,'SHOAL',220,2,7);
+    fish(x,244,2,frame,10);
+    txt(x,'CH 65',P,14,14); txt(x,'DIR PND',P+30,14,8);
+    txt(x,'NT +45',P,21,14); txt(x,'SD 347',P+30,21,8);
+    txt(x,'OC -20',P,28,14); txt(x,'EV 5',P+30,28,8);
+    txt(x,'RATE X2 LEN 16',P,35,9);
+    txt(x,'OCT',P,42,9); txt(x,'-1',P+14,42,9);
+    txt(x,'TR',P+26,42,9); txt(x,'2',P+36,42,9);
+    txt(x,'C NMIN',P,49,7);
+    rect(x,0,57,256,1,4);
+    txt(x,'P1',6,59,5);  txt(x,'CHANCE',18,59,15);
+    txt(x,'P2',96,59,5); txt(x,'NOTE',108,59,15);
+    txt(x,'P3',176,59,5);txt(x,'OCT',188,59,15);
+  }
+
+  // ---- the screensaver scene: it actually swims ----
+  // Each fish drifts leftward at its own pace and "darts" now and then, the
+  // way the real screensaver darts when a track sounds a note. Track 5 is
+  // muted (dim, slow), track 7 is breathing (faded). Bubbles rise; weeds sway.
+  var sv={
+    fx:[38,150,86,205,120,20,176,64],
+    spd:[0.30,0.34,0.39,0.32,0.13,0.43,0.28,0.36],
+    dart:[0,0,0,0,0,0,0,0],       // frames of dart boost remaining
+    next:[40,90,25,140,9999,60,9999,110], // frames until each fish next darts
+    bx:[52,117,181,235], by:[38,14,50,27],
+    t:0
+  };
+  function drawSaver(step){
+    var c=document.getElementById('saverscr'),x=ctx(c);
+    var tick=sv.t;
+    for(var sx=0;sx<256;sx+=5){var h=((sx*2654435761)>>>13)%3;px(x,sx,63-h,3);}
+    var wx=[34,138,214];
+    for(var w=0;w<3;w++)for(var seg=0;seg<5;seg++){
+      var dx=Math.round(Math.sin(tick/22+w*2.1+seg*0.8)*(seg+1)/2.5);
+      rect(x,wx[w]+dx,60-seg*3,1,2,4);
+    }
+    for(var b=0;b<4;b++){
+      if(step&&(tick&1)===0){
+        sv.by[b]-=1;
+        if(sv.by[b]<2){sv.by[b]=58+((tick*7+b*13)%5);sv.bx[b]=8+((sv.bx[b]*31+tick*17)%240);}
+      }
+      var bwob=sv.bx[b]+Math.round(Math.sin(tick/9+b*1.6)*1.5);
+      px(x,bwob,sv.by[b],6);
+    }
+    var cols=[9,9,9,9,3,9,4,9];
+    for(var t=0;t<8;t++){
+      var darting=sv.dart[t]>0;
+      if(step){
+        var v=sv.spd[t]+(darting?1.1:0);
+        sv.fx[t]-=v;
+        if(sv.fx[t]<-12)sv.fx[t]=258+((tick*29+t*53)%48);
+        if(darting)sv.dart[t]-=1;
+        else if(sv.next[t]--<=0){sv.dart[t]=7;sv.next[t]=45+((tick*13+t*71)%140);}
+      }
+      var fy=2+t*7+Math.round(Math.sin(tick/16+t*1.7)*2);
+      fish(x,Math.round(sv.fx[t]),fy,darting?1:((tick>>3)+t)&1,darting?15:cols[t]);
+    }
+    if(step)sv.t+=1;
+  }
+
+  // ---- divider strips: one fish out for a swim ----
+  function drawDividers(){
+    var divs=document.querySelectorAll('canvas.divider');
+    for(var d=0;d<divs.length;d++){
+      var c=divs[d],x=ctx(c),i=+(c.dataset.i||0);
+      for(var sx=0;sx<256;sx+=7){var h=((sx*2654435761+i*97)>>>13)%2;px(x,sx,13-h,2);}
+      var fx=[36,150,86,205][i%4];
+      fish(x,fx,3,i&1,7);
+      px(x,fx+16,3,4); px(x,fx+21,6,3);
+    }
+  }
+
+  drawHero(0); drawSaver(false); drawDividers();
+
+  // the hero fish's tail flicks and the screensaver swims - unless the
+  // system asks for reduced motion, in which case both hold a still frame
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var f=0;
+    setInterval(function(){f=1-f;drawHero(f);},600);
+    setInterval(function(){drawSaver(true);},70);
+  }
+})();
+</script>

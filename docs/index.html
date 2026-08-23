@@ -84,7 +84,7 @@
   <header>
     <div class="eyebrow">Ormer Modular · made in Guernsey</div>
     <h1>SHOAL</h1>
-    <p class="vstamp">USER MANUAL · v1.0.0 · for the Expert Sleepers disting NT</p>
+    <p class="vstamp">USER MANUAL · v1.1.0 · for the Expert Sleepers disting NT</p>
     <p class="lede">Shoal plays melodies you didn't write - but that always sound like you
     meant them. Eight tracks each generate a looping melody from a <b>seed</b>; every note is
     locked to one global <b>scale</b>; tracks can <b>follow</b> one another like fish. The name:
@@ -244,7 +244,9 @@
         track's gate immediately - including tracks between notes - so the full chord always
         sounds the instant you freeze. The bloom is deliberate and unclocked, like a sustain
         pedal: it is what makes a slow gate patched into Freeze produce oceanic swells. The
-        fish stops swimming; <code>FRZ</code> shows on the panel.</p></div>
+        fish stops swimming; <code>FRZ</code> shows on the panel. By default the Clock out
+        keeps running through a freeze so the rest of the patch stays in time - <i>Frozen
+        clock out</i> chooses.</p></div>
       <div class="card"><h4>Weight · global</h4>
         <p>Consonance gravity: that share of notes snap to the scale's root, third or fifth.
         High weight turns wild settings lush instead of angular.</p></div>
@@ -328,7 +330,7 @@
   <section id="params">
     <h2>The parameter pages</h2>
     <p>Exit the custom view and everything lives on 17 standard pages. Every parameter - all
-    171 of them - is CV/MIDI-mappable and saved in presets. Track parameters are prefixed
+    207 of them - is CV/MIDI-mappable and saved in presets. Track parameters are prefixed
     <code>T1…T8</code> in mapping menus.</p>
 
     <h3>Global</h3>
@@ -339,15 +341,17 @@
         <tr><td>Clock source</td><td>External / Internal</td><td>Where ticks come from (default Internal - a fresh Shoal runs on its own)</td></tr>
         <tr><td>BPM</td><td>20–300</td><td>Internal clock speed. ×1 = one step per beat (quarter notes); ×4 = 16ths. Ignored while the clock is External (but remembered, so you can set a tempo before switching over)</td></tr>
         <tr><td>Run</td><td>Off / On</td><td>Master play/pause (mappable = external transport)</td></tr>
-        <tr><td>Freeze</td><td>Off / On</td><td>Hold every sounding note as a chord; nothing advances</td></tr>
+        <tr><td>Freeze</td><td>Off / On</td><td>Hold every sounding note as a chord; nothing advances. Clock out behaviour: see <i>Frozen clock out</i></td></tr>
         <tr><td>Scale</td><td>13 scales</td><td>Chromatic, Major, Natural/Harmonic minor, Dorian, Phrygian, Lydian, Mixolydian, Major/Minor pentatonic, Blues, Hirajoshi, In-Sen</td></tr>
         <tr><td>Root note</td><td>C-1…G9</td><td>The tonal centre; C3 sits at 0V</td></tr>
         <tr><td>Weight</td><td>0–100%</td><td>Consonance gravity: % of notes snapped to root/3rd/5th</td></tr>
         <tr><td>Screensaver</td><td>Off / 1 min / 5 min</td><td>Idle animation: the shoal swims the screen</td></tr>
         <tr><td>Clock input</td><td>bus</td><td>Which input the clock comes in on</td></tr>
         <tr><td>Reset input</td><td>bus / none</td><td>Rising edge → all tracks restart at step 1 on the next tick</td></tr>
-        <tr><td>Clock out</td><td>bus / none</td><td>Shoal's master clock as 5V pulses (×1 rate, 50% duty) - clock other algorithms or external gear from Shoal's grid. Follows Run and Freeze</td></tr>
+        <tr><td>Reseed input</td><td>bus / none</td><td>Rising edge → reseed everything, exactly like the encoder gesture: a fresh random <i>Reseed all</i> base, armed, landing at each loop origin. Built for short triggers</td></tr>
+        <tr><td>Clock out</td><td>bus / none</td><td>Shoal's master clock as 5V pulses (×1 rate, 50% duty) - clock other algorithms or external gear from Shoal's grid. Follows Run</td></tr>
         <tr><td>Clock out mode</td><td>Add / Replace</td><td>As with the track outputs; Replace by default</td></tr>
+        <tr><td>Frozen clock out</td><td>Stops / Runs</td><td>What Clock out does during a Freeze. <code>Runs</code> (default) keeps the grid and pulses going so the rest of the patch stays in time; <code>Stops</code> holds the whole patch's breath at once. <b>Changed from v1.0.0</b>, which always stopped</td></tr>
         <tr><td>Reseed all</td><td>0–999</td><td>Any change re-rolls every track (armed, on the grid)</td></tr>
       </tbody>
     </table>
@@ -361,6 +365,7 @@
         <tr><td>Length</td><td>1–64</td><td>Steps in this track's loop</td></tr>
         <tr><td>Rate</td><td>/64 … ×64</td><td>Speed relative to the master clock (×1 = one step per beat)</td></tr>
         <tr><td>Direction</td><td>9 modes</td><td>Forwards · Reverse · Pendulum · Random · Drunk · Pong · Tide · Shuffle · Pools</td></tr>
+        <tr><td>Shift</td><td>−63…+63</td><td>Rotate the whole pattern - notes, gates, their timing - by that many steps, non-destructively (0 returns the original). On a follower: a canon</td></tr>
         <tr><td>Chance</td><td>0–100%</td><td>Probability a step plays a note</td></tr>
         <tr><td>Breathe</td><td>0–100%</td><td>Chance a whole pass rests (phrase-level silence)</td></tr>
         <tr><td>Note</td><td>−100…+100%</td><td>Random note variation: magnitude = how often and how far, sign = direction</td></tr>
@@ -389,6 +394,18 @@
     a track owns its busses). <b>Everything defaults to None</b>: a track writes to no bus at
     all until you assign its outputs. Assign to physical Outputs for your rack, or to aux
     busses to drive other algorithms inside the preset.</p>
+    <p>Each routing page also carries the track's output voltages (new in v1.1; the defaults
+    are exactly the old behaviour):</p>
+    <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Parameter</th><th>Range</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Gate volts</td><td>1–10V</td><td>The gate's high level (default 5V). 10V for vintage-style gear, 1V for LZX-standard video synthesis</td></tr>
+        <tr><td>Pitch scale</td><td>5–200%</td><td>Scales the pitch CV around 100% = 1V/oct. 120% ≈ 1.2V/oct gear; small values compress the melody into a narrow CV window</td></tr>
+        <tr><td>Pitch offset</td><td>−10…+10V</td><td>Fixed voltage added after the scale - shift a track's CV range, or make a bipolar melody unipolar</td></tr>
+      </tbody>
+    </table>
+    </div>
   </section>
 
   <canvas class="divider" width="256" height="14" data-i="2"></canvas>
@@ -406,6 +423,16 @@
         harmony only appears on some notes.</p>
         <span class="set">T2: <b>Source</b> T1, same Rate/Length,
         <b>Transpose</b> +2 (thirds) or +4 (fifths-ish)</span></div>
+      <div class="card"><h4>A true canon · v1.1</h4>
+        <p>The same melody enters four steps behind its leader, an octave down - a round that
+        survives every reseed. Shift the follower, never the leader.</p>
+        <span class="set">T2: <b>Source</b> T1, same Rate/Length, <b>Shift</b> −4,
+        <b>Octave</b> −1</span></div>
+      <div class="card"><h4>Other voltage standards · v1.1</h4>
+        <p>Non-Euro gear with no external attenuators: each track's routing page has its own
+        gate level, pitch scale and offset.</p>
+        <span class="set">LZX video (0–1V): <b>Gate volts</b> 1V · <b>Pitch scale</b> 40% ·
+        <b>Pitch offset</b> +0.5V &nbsp;·&nbsp; 1.2V/oct gear: <b>Pitch scale</b> 120%</span></div>
       <div class="card"><h4>Evolving ambient</h4>
         <p>Then don't touch anything for twenty minutes - Evolve and Breathe do the composing,
         Weight keeps it lush.</p>
@@ -417,8 +444,9 @@
         shoal swims on.</p>
         <span class="set">Slow LFO or foot-switch gate → CV-map <b>Freeze</b></span></div>
       <div class="card"><h4>Shoal as the master clock</h4>
-        <p>Drums, LFOs and envelopes all ride Shoal's grid - and Freeze holds the whole
-        patch's breath at once. Put Shoal above the algorithms that read it.</p>
+        <p>Drums, LFOs and envelopes all ride Shoal's grid. The clock keeps running through a
+        Freeze by default, so synced delays keep their tails while the melody hangs. Put Shoal
+        above the algorithms that read it.</p>
         <span class="set"><b>Clock out</b> = an aux bus (or a physical output for external
         gear) · downstream algorithms' clock inputs = that bus</span></div>
       <div class="card"><h4>Full external transport</h4>
@@ -439,7 +467,7 @@
         CV-map Transpose instead for chord progressions on one voice, always in key.</p>
         <span class="set">CV → <b>Root note</b>, <b>Scale</b> or <b>Transpose</b></span></div>
     </div>
-    <p style="margin-top:14px">Every one of Shoal's 171 parameters is mappable - a ramp rising
+    <p style="margin-top:14px">Every one of Shoal's 207 parameters is mappable - a ramp rising
     over your set on <b>Evolve</b>, <b>Weight</b> or <b>Chance</b> is form-level automation
     with no hands. Solo and the pot punch-home gestures are deliberately <i>not</i>
     parameters: those stay under your fingers. Mute is mappable.</p>
@@ -485,10 +513,10 @@
   <section id="specs">
     <h2>Specifications</h2>
     <ul class="speclist">
-      <li>Pitch outputs: 1V/oct, 0V = C3 (MIDI note 48), folded to stay in key at the extremes</li>
-      <li>Gate outputs: 0/5V</li>
-      <li>Clock input threshold: rising through ~1V (with hysteresis)</li>
-      <li>Clock output: 0/5V pulses at the ×1 step rate, 50% duty; follows Run and Freeze</li>
+      <li>Pitch outputs: 1V/oct, 0V = C3 (MIDI note 48), folded to stay in key at the extremes; per-track scale (5–200%) and offset (±10V)</li>
+      <li>Gate outputs: 0V low, high level per track (1–10V, default 5V)</li>
+      <li>Clock, reset and reseed input thresholds: rising through ~1V (with hysteresis)</li>
+      <li>Clock output: 0/5V pulses at the ×1 step rate, 50% duty; follows Run, and Freeze only if <i>Frozen clock out</i> is set to <code>Stops</code></li>
       <li>8 pitch + 8 gate outputs plus the clock output, freely assignable to any bus, Add or Replace</li>
       <li>Memory: under 0.5KB per instance; CPU: light</li>
       <li>Requires disting NT firmware 1.15.0 or later (the release that introduced plug-in API v13) · algorithm guid: Shol</li>

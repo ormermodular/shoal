@@ -143,7 +143,10 @@ Four controls made for long-form and ambient playing:
   freeze. That immediate bloom is deliberate (and unclocked, like a
   sustain pedal): it is what makes a slow gate patched into Freeze
   produce oceanic swells. The fish stops swimming; `FRZ` shows on
-  the panel.
+  the panel. By default the **Clock out keeps running** through a
+  freeze, so delays and anything else riding Shoal's clock stay in
+  time while the melody hangs - set *Global → Frozen clock out* to
+  `Stops` if you want the whole patch to hold its breath together.
 - **WEIGHT** (global, 0–100%) - consonance gravity: that share of
   notes snap to the scale's root, third or fifth. High weight turns
   wild settings lush instead of angular.
@@ -288,7 +291,7 @@ honest OLED care: nothing sits still on an idle screen.
 ## The parameter pages
 
 Exit the custom view and everything lives on 17 standard pages. Every
-parameter - all 171 of them - is CV/MIDI-mappable and saved in presets.
+parameter - all 207 of them - is CV/MIDI-mappable and saved in presets.
 Track parameters are prefixed `T1…T8` in mapping menus. (See *Mappings
 worth trying* in the Recipes section.)
 
@@ -305,8 +308,10 @@ worth trying* in the Recipes section.)
 | Screensaver | Off / 1 min / 5 min | Idle animation: the shoal swims the screen, one fish per track |
 | Clock input | bus | Which input the clock comes in on |
 | Reset input | bus / none | Rising edge → all tracks restart at step 1 on the next tick |
-| Clock out | bus / none | Shoal's master clock as 5V pulses (×1 rate, 50% duty) - clock other algorithms or external gear from Shoal's grid. Follows Run and Freeze |
+| Reseed input | bus / none | Rising edge → reseed everything, exactly like the encoder gesture: a fresh random *Reseed all* base, armed, landing at each loop origin. Built for short triggers (CV on *Seed* wants held steps; this wants pulses) |
+| Clock out | bus / none | Shoal's master clock as 5V pulses (×1 rate, 50% duty) - clock other algorithms or external gear from Shoal's grid. Follows Run |
 | Clock out mode | Add / Replace | As with the track outputs; Replace by default |
+| Frozen clock out | Stops / Runs | What Clock out does during a Freeze. `Runs` (default) keeps the grid and pulses going so the rest of the patch stays in time; `Stops` holds the whole patch's breath at once. **Changed from v1.0.0**, which always stopped |
 | Reseed all | 0–999 | Any change re-rolls every track (armed, on the grid) |
 
 ### Track 1–8 (each)
@@ -315,6 +320,7 @@ worth trying* in the Recipes section.)
 | Length | 1–64 | Steps in this track's loop |
 | Rate | /64 … ×64 | Speed relative to the master clock (×1 = one step per beat) |
 | Direction | 9 modes | Forwards · Reverse · Pendulum (ends play twice) · Random · Drunk (50% on / 25% repeat / 25% back) · Pong (ends play once) · Tide (loop start drifts one step per pass) · Shuffle (every step once per pass, reshuffled) · Pools (dwells in a small pocket, then hops) |
+| Shift | −63…+63 | Rotate the whole pattern - notes, gates, their timing - by that many steps, non-destructively (0 returns the original). On a follower, this is a canon: the same melody entering behind or ahead of its source |
 | Chance | 0–100% | Probability a step plays a note |
 | Breathe | 0–100% | Chance a whole pass rests (phrase-level silence) |
 | Note | −100…+100% | Random note variation: magnitude = how often & how far, sign = direction (0 = melody as seeded) |
@@ -344,6 +350,19 @@ so nothing ever appears on an output or aux bus you didn't choose.
 Assign to physical Outputs for your rack, or to aux busses to drive
 other algorithms inside the preset.
 
+Each routing page also carries the track's **output voltages** (new in
+v1.1; the defaults are exactly the old behaviour):
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Gate volts | 1–10V | The gate's high level (default 5V). 10V for vintage-style gear, 1V for LZX-standard video synthesis |
+| Pitch scale | 5–200% | Scales the pitch CV around 100% = 1V/oct. 120% ≈ 1.2V/oct gear; small values compress the melody into a narrow CV window |
+| Pitch offset | −10…+10V | Fixed voltage added after the scale - shift the whole track's CV range, or make a bipolar melody unipolar |
+
+Pitch scale changes what "in tune" means downstream, so scale first,
+then tune your oscillator - or leave 100% and use only the offset,
+which transposes without touching the volt-per-octave law.
+
 ---
 
 ## Recipes
@@ -359,13 +378,31 @@ Track 2: *Sample source* = Track 1, same Rate and Length,
 melody harmonises itself, in key, through every reseed. Thin it with
 *Chance* so the harmony only appears on some notes.
 
+**A true canon** *(new in v1.1)*
+Track 2: *Sample source* = Track 1, same Rate and Length,
+*Shift* = −4 (or wherever the imitation sits well), *Octave* = −1.
+The same melody enters four steps behind its leader, an octave down -
+a round, and it survives every reseed. Shift the follower, never the
+leader, and the leader stays the reference voice.
+
+**Fitting other voltage standards** *(new in v1.1)*
+Each track's routing page has *Gate volts*, *Pitch scale* and *Pitch
+offset*, so non-Euro gear needs no external attenuators. For
+LZX-standard video synthesis (0-1V full scale): *Gate volts* = 1V,
+*Pitch scale* = 40%, *Pitch offset* = +0.5V - the two-octave melody
+(roughly ±1V) lands inside 0-1V with headroom for Note/Oct deviation.
+For 1.2V/oct gear, *Pitch scale* = 120%. For vintage +10V gates,
+*Gate volts* = 10V.
+
 **Shoal as the master clock**
 Set *Clock out* to an aux bus (or a physical output for external gear)
 and point other algorithms' clock inputs at that bus - drums, LFOs and
 envelopes all ride Shoal's grid, in either clock mode. Put Shoal above
 the algorithms that read it. The pulse runs at the ×1 step rate, 50%
-duty, and stops with Run and Freeze - so freezing the shoal holds the
-whole patch's breath at once.
+duty, and stops with Run. During a Freeze it keeps running by default,
+so synced delays keep their tails while the melody hangs; set *Frozen
+clock out* to `Stops` if you'd rather freeze the whole patch's breath
+at once.
 
 **Full external transport (DAW-style start/stop from one gate)**
 Clock → Input 1. Run/transport gate → Input 2. Set *Reset input* =
@@ -395,6 +432,8 @@ change what the instrument *is*:
 
 - **Seed** - sequence the sequencer: CV stepping a track's Seed
   switches whole melodies, each landing neatly at the loop start.
+  (For plain triggers, patch the dedicated *Reseed input* instead -
+  it fires on edges, no held CV needed.)
 - **Freeze** - a slow LFO or foot-controlled gate breathes the shoal
   into hanging chords. Built for it.
 - **Root note / Scale** - key and mode changes from CV; each track
@@ -445,11 +484,12 @@ re-save them with the new version.
 ## Specifications
 
 - Pitch outputs: 1V/oct, 0V = C3 (MIDI note 48), folded to stay in key at
-  the extremes
-- Gate outputs: 0/5V
-- Clock input threshold: rising through ~1V (with hysteresis)
-- Clock output: 0/5V pulses at the ×1 step rate, 50% duty; follows Run
-  and Freeze
+  the extremes; per-track scale (5-200%) and offset (±10V)
+- Gate outputs: 0V low, high level per track (1-10V, default 5V)
+- Clock, reset and reseed input thresholds: rising through ~1V (with
+  hysteresis)
+- Clock output: 0/5V pulses at the ×1 step rate, 50% duty; follows Run,
+  and Freeze only if *Frozen clock out* is set to `Stops`
 - 8 pitch + 8 gate outputs plus the clock output, freely assignable to
   any bus, Add or Replace
 - Memory: under 0.5KB per instance; CPU: light

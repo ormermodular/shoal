@@ -76,7 +76,7 @@ The algorithm appears in the list as **Shoal** (guid `Shol`).
 1. **Add the algorithm.** It is already ticking: Clock source defaults to
    Internal at 120 BPM. To sync to your rack instead, set Clock source to
    External and patch a clock into **Input 1**, and optionally a reset into
-   **Input 2**.
+   **Input 2** - or set it to MIDI and clock Shoal from your DAW's transport.
 2. **Give Track 1 outputs.** Every output starts as **None**, so on the
    *Routing 1* page set **Gate out** to Output 2 and **Pitch out** to
    Output 1, then patch to an envelope and an oscillator. Set **Scale** and
@@ -93,14 +93,19 @@ rest.
 ## Features
 
 - **8 tracks of CV** - each with its own 1V/oct pitch output (0V = C3) and
-  5V gate output, routable to any physical output or aux bus. **All outputs
+  gate output, routable to any physical output or aux bus. **All outputs
   default to None**, so a track touches no bus until you assign it and you
   build the shoal one deliberate voice at a time
 - **Per track** - length 1 to 64, clock rate /64 to x64 including the odd
-  ratios (3, 5, 6 and 7, both ways), nine playback directions (Forwards,
-  Reverse, Pendulum, Random, Drunk, Pong, Tide, Shuffle, Pools), Chance,
-  bipolar Note and Oct variation amounts, gate length, tie chance, slop,
-  octave offset, transpose in scale degrees, mute, seed
+  ratios (3, 5, 6 and 7, both ways), thirteen playback directions
+  (Forwards, Reverse, Pendulum, Random, Drunk, Pong, Tide, Shuffle,
+  Pools, Stride, Gravity, Converge, Diverge), pattern Shift (rotate the
+  whole loop; a canon on a follower), Chance, bipolar Note and Oct
+  variation amounts, gate length, tie chance, slop, octave offset,
+  transpose in scale degrees, mute, seed
+- **Your rack's voltages** - per-track gate level (1-10V, default 5V) and
+  pitch CV scale and offset, so low-voltage, vintage and 1.2V/oct gear
+  patch straight in with no external attenuators
 - **The slow arts** - per-track **Evolve** (steps quietly re-roll themselves
   each pass) and **Breathe** (whole passes rest), plus global **Freeze**
   (hold the shoal as a chord) and **Weight** (gravity towards the root,
@@ -113,13 +118,31 @@ rest.
   Hirajoshi, In-Sen, with a root note. Notes are built from scale degrees
   rather than quantised afterwards, so nothing is ever out of key
 - **Clocking** - internal clock with BPM (the default, so a fresh Shoal runs
-  at 120 out of the box) or an external CV clock, with a reset input that
-  realigns every track to step 1
+  at 120 out of the box), an external CV clock, or MIDI clock (24 PPQN, with
+  Start/Continue/Stop transport support), with a reset input that realigns
+  every track to step 1
+- **MIDI note out** - per track channel (off by default); velocity and a
+  destination bitmask (Breakout, Select bus, USB, Internal) are global
+  settings shared by every track - Internal routes straight into another
+  algorithm on the same NT, no cabling needed
+- **Currents** - a slow, smooth, seeded 0-10V drift CV per track, "the
+  water the melody swims in" - for filter cutoffs, VCA levels or send
+  amounts. Repeats exactly with the seed, moves at the track's own rate,
+  and a follower generates its own current rather than inheriting its
+  source's
+- **End-of-sequence** - a 5V trigger per track, firing every time it
+  completes a full Length cycle. Counts advances rather than loop origin,
+  so all 15 Direction modes get an evenly-spaced pulse, including
+  Random, Drunk, Pools and Skitter, which have no fixed loop shape of
+  their own
 - **Clock out** - Shoal's master clock as 5V pulses on any bus, in either
-  clock mode, so other algorithms and external gear can ride its grid
+  clock mode, so other algorithms and external gear can ride its grid -
+  and it keeps running through a Freeze (your choice), so synced delays
+  keep their tails while the melody hangs
 - **Quantised reseeds** - a reseed arms and lands when the track wraps to
-  step 1, so new patterns always enter on the grid. Per track and global
-- **Everything is CV and MIDI mappable** - all 173 parameters, through the
+  step 1, so new patterns always enter on the grid. Per track, global,
+  and from a dedicated trigger input
+- **Everything is CV and MIDI mappable** - all 233 parameters, through the
   module's own mapping system. Sequence the Seed for melody switching,
   breathe Freeze with a slow LFO, CV the Transpose for chord progressions
 - **The shoal screensaver** - leave the controls alone and the display
@@ -148,11 +171,14 @@ alongside the selected track's detail panel and the live pot assignments.
 
 ## Parameter pages
 
-- **Global** - clock source, BPM, run, freeze, scale, root note, weight,
-  screensaver, clock and reset inputs, clock out, reseed all
+- **Global** - clock source (External / Internal / MIDI), BPM, run, freeze,
+  scale, root note, weight, screensaver, clock and reset inputs, clock out,
+  reseed all, MIDI velocity and destination
 - **Track 1 to 8** - the per-track controls above
 - **Routing 1 to 8** - gate and pitch output busses with add or replace
-  modes, gate listed first to match the other NT sequencers
+  modes (gate listed first to match the other NT sequencers), a Current
+  and an EOS out bus (both Replace-only), plus each track's MIDI channel
+  (velocity and destination are global, set once on the Global page)
 
 Every one is a standard NT parameter, so all of them are CV and MIDI
 mappable and all of them are saved in presets. Changing a track's **Seed**

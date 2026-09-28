@@ -1707,14 +1707,28 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 				// ticks, fast rates queued extra sub-steps within one
 				// tick - into one formula that also covers fractional
 				// rates: 1.5x (num=3,den=2) naturally alternates
-				// 1,2,1,2... advances/tick; /1.5 (num=2,den=3) naturally
-				// gives 0,1,1,0,1,1... - both verified against the old
-				// two-branch logic across all 21 existing rate table
-				// entries before this shipped. tickCount*num stays well
-				// inside uint32 for any realistic session (lesson 1: no
-				// 64-bit division).
-				uint32_t before = ( dtc->tickCount * num ) / den;
-				uint32_t after = ( ( dtc->tickCount + 1 ) * num ) / den;
+				// 2,1,2,1... advances/tick; /1.5 (num=2,den=3) naturally
+				// gives 1,1,0,1,1,0... tickCount*num stays well inside
+				// uint32 for any realistic session (lesson 1: no 64-bit
+				// division).
+				//
+				// CEILING phase, not floor: each group of den ticks must
+				// fire its advance on the FIRST tick of the group, so
+				// divided rates land ON the downbeat shared with tick 0.
+				// Floor phase fired on the last tick of the group - a /4
+				// track advanced on ticks 3,7,11 (one tick shy of every
+				// downbeat), and after a reset's forced tick-0 advance
+				// played 0,3,7,11: a 3-tick pickup, then permanently a
+				// 16th off the kick (user-reported on the VCV port, Sept
+				// 2026; same engine, same bug here against the NT's own
+				// clock). Ceiling also front-loads fractional rates (the
+				// double advance of x1.5 lands on the beat, not after
+				// it), and makes the reset advance below the natural
+				// schedule (ceil gives every rate count >= 1 at tickCount
+				// 0) instead of an extra hit - floor gave /4 steps at
+				// BOTH tick 0 and tick 3.
+				uint32_t before = ( dtc->tickCount * num + den - 1 ) / den;
+				uint32_t after = ( ( dtc->tickCount + 1 ) * num + den - 1 ) / den;
 				uint32_t count = after - before;
 				uint32_t stepPeriod = ( period * den ) / num;	// constant average spacing - correct for gate-length math even though individual ticks fire unevenly
 
@@ -2439,7 +2453,7 @@ static const _NT_factory factory =
 	.name = "Shoal",
 	// version first: the algorithm browser truncates long descriptions,
 	// and the version is the one part that must always be visible
-	.description = "v1.2.0 - 8-track generative melody sequencer",
+	.description = "v1.2.1 - 8-track generative melody sequencer",
 	.numSpecifications = 0,
 	.calculateRequirements = calculateRequirements,
 	.construct = construct,

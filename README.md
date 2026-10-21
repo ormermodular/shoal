@@ -42,7 +42,7 @@ want something new entirely you **reseed**, and the shoal turns.
 And it is all shareable: pass on your seed and your settings, and someone
 on the other side of the world hears exactly what you heard, note for note.
 
-📖 [**Manual**](docs/MANUAL.md) · 🐟 [Instagram](https://instagram.com/ormermodular)
+📖 [**Manual**](https://ormermodular.github.io/shoal/) · 🐟 [Instagram](https://instagram.com/ormermodular)
 · 🎣 [disting NT Plugin Gallery](https://nt-gallery.nosuch.dev/)
 
 ---
@@ -87,7 +87,7 @@ The algorithm appears in the list as **Shoal** (guid `Shol`).
    **Octave** to -1 or -2, **Rate** to /2 or /4, and thin it out with
    **Chance**.
 
-The [manual](docs/MANUAL.md) covers the rest, and there is rather a lot of
+The [manual](https://ormermodular.github.io/shoal/) covers the rest, and there is rather a lot of
 rest.
 
 ## Features

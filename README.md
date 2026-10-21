@@ -42,8 +42,7 @@ want something new entirely you **reseed**, and the shoal turns.
 And it is all shareable: pass on your seed and your settings, and someone
 on the other side of the world hears exactly what you heard, note for note.
 
-📖 [**Manual**](https://ormermodular.github.io/shoal/) · 🐟 [Instagram](https://instagram.com/ormermodular)
-· 🎣 [disting NT Plugin Gallery](https://nt-gallery.nosuch.dev/)
+<p align="center"><a href="https://ormermodular.github.io/shoal/">disting NT manual</a></p>
 
 ---
 

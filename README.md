@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/shoal-header.svg" alt="Shoal - 8-track generative melody sequencer for the Expert Sleepers disting NT" width="100%">
+  <img src="docs/images/shoal-banner.svg" alt="Shoal by Ormer Modular" width="100%">
 </p>
 
 <p align="center">

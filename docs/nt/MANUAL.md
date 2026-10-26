@@ -206,8 +206,7 @@ Six more, from v1.2:
   step 1, step 3, step 2, step 4, step 3, step 5... Each step gets
   played twice across a full cycle, which takes twice the pattern's
   Length to complete. Fixed and deterministic - every seed hops the
-  same way, unlike the original v1.2.0-beta.1 version, which picked a
-  seed-derived jump size.
+  same way.
 - **Gravity** - mostly walks forward, but has a seed-derived chance
   each step of snapping back to step 1 instead - an orbiting, homing
   pull. The same idea **Weight** applies to pitch (gravity towards the
@@ -263,6 +262,32 @@ The rest - /5.3, /2.6, ×1.3, ×5.3 - have longer, less obvious repeat
 windows (10, 13 and 53 ticks), which is rather the point: a lopsided
 pulse that never quite settles into a short, learnable groove - more
 texture than tempo.
+
+### Per-track clocks (v1.3)
+Every track can run from **its own clock**. On each track's *Routing*
+page, **Clock input** picks a bus (or None). With **None** - the
+default, and every earlier preset - the track follows the master clock
+exactly as before. With a bus assigned, that track ignores the master
+and steps on the rising edges of *its own* pulses, so one Shoal can sit
+in two or three different time worlds at once: a track on a clock
+divider, another on a euclidean or clocked-gate source, the rest on the
+master.
+
+- **Rate still applies**, against the track's own clock: ×1 = one step per
+  pulse on its bus, /2 = every second pulse, ×2 = two steps per pulse.
+  Fractional rates keep their exact long-run ratios, and divided rates
+  land on the track's own downbeat (its first pulse after a reset).
+- **Clock source / BPM / Clock input (Global) don't touch it.** The
+  threshold is the same as the master's: a pulse must rise above ~1V and
+  fall back below ~0.1V.
+- **Run** stops own-clock tracks too. **Freeze** holds them like every
+  other track (the clock keeps being tracked, so they resume in phase).
+- **Reset input** restarts an own-clock track at step 1 on *its* next
+  pulse - the reset waits for that track's clock, just as the master's
+  reset waits for the master's next tick.
+- **Clock out** is still the master's clock; it doesn't mirror per-track
+  clocks.
+- No pulses arriving on a track's bus means that track doesn't advance.
 
 ### MIDI (v1.2)
 Shoal can send MIDI note out per track, and can be clocked FROM MIDI
@@ -453,14 +478,14 @@ honest OLED care: nothing sits still on an idle screen.
 ## The parameter pages
 
 Exit the custom view and everything lives on 17 standard pages. Every
-parameter - all 233 of them - is CV/MIDI-mappable and saved in presets.
+parameter - all 241 of them - is CV/MIDI-mappable and saved in presets.
 Track parameters are prefixed `T1…T8` in mapping menus. (See *Mappings
 worth trying* in the Recipes section.)
 
 ### Global
 | Parameter | Range | What it does |
 |---|---|---|
-| Clock source | External / Internal / MIDI | Where ticks come from. MIDI locks to incoming realtime MIDI clock (24 PPQN); Start resets to step 1, Continue resumes, Stop halts - Run must also be On |
+| Clock source | External / Internal / MIDI | Where ticks come from. `External` means a bus: the *Clock input* parameter, which can be a physical input or another algorithm's output. `Internal` is Shoal's own BPM clock (default). MIDI locks to incoming realtime MIDI clock (24 PPQN); Start resets to step 1, Continue resumes, Stop halts - Run must also be On |
 | BPM | 20–300 | Internal clock speed. ×1 = one step per beat (quarter notes); ×4 = 16ths. Ignored while the clock is External (but remembered, so you can set a tempo before switching over) |
 | Run | Off / On | Master play/pause (mappable = external transport) |
 | Freeze | Off / On | Hold every sounding note as a chord; nothing advances. CV-map it for swells |
@@ -554,6 +579,13 @@ patched to:
 |---|---|---|
 | EOS out | bus / none | Which bus receives a 5V trigger every time this track completes a full Length cycle |
 
+Each routing page also carries the track's **Clock input** (new in v1.3 -
+see Per-track clocks above):
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Clock input | bus / none | This track's own clock. None (default) = follow the master clock; a bus = step on that bus's pulses instead, independent of the master |
+
 ---
 
 ## Recipes
@@ -617,7 +649,7 @@ Chance 65%, Note and Oct at 0, Gate 10%, Slop 15%, ×8 rate - take just the
 gate output. The seeded rests and drift make a repeating, groovy pattern.
 
 **Mappings worth trying**
-Every one of Shoal's 233 parameters is CV/MIDI-mappable through the
+Every one of Shoal's 241 parameters is CV/MIDI-mappable through the
 NT's Mappings menu (track parameters show as `T1…T8`). The ones that
 change what the instrument *is*:
 
@@ -651,7 +683,9 @@ through each track and reset Rate to what you want.
 Run is Off, or *Clock source* is `External` and no clock is arriving on
 the input the *Clock input* parameter points at, or *Clock source* is
 `MIDI` and no realtime MIDI clock (and a Start or Continue) has arrived
-yet. (A fresh Shoal defaults to `Internal` and runs on its own.)
+yet. (A fresh Shoal defaults to `Internal` and runs on its own.) A track
+whose *Clock input* (Routing page) is set only moves when pulses arrive
+on that bus, whatever the Clock source says.
 
 **No MIDI notes, even with a channel set.**
 *MIDI dest* is `None`, or set to destinations nothing is listening on.

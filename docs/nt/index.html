@@ -84,7 +84,7 @@
   <header>
     <div class="eyebrow">Ormer Modular · made in Guernsey</div>
     <h1>SHOAL</h1>
-    <p class="vstamp">USER MANUAL · v1.2.1 · for the Expert Sleepers disting NT</p>
+    <p class="vstamp">USER MANUAL · v1.3.0 · for the Expert Sleepers disting NT</p>
     <p class="lede">Shoal plays melodies you didn't write - but that always sound like you
     meant them. Eight tracks each generate a looping melody from a <b>seed</b>; every note is
     locked to one global <b>scale</b>; tracks can <b>follow</b> one another like fish. The name:
@@ -278,6 +278,25 @@
     13 and 53 ticks), which is rather the point: a lopsided pulse that never quite settles into a
     short, learnable groove - more texture than tempo.</p>
 
+    <h3>Per-track clocks (v1.3)</h3>
+    <p>Every track can run from <b>its own clock</b>. On each track's <i>Routing</i> page,
+    <b>Clock input</b> picks a bus (or None). With <b>None</b> &ndash; the default, and every
+    earlier preset &ndash; the track follows the master clock exactly as before. With a bus
+    assigned, that track ignores the master and steps on the rising edges of <i>its own</i>
+    pulses, so one Shoal can sit in two or three different time worlds at once.</p>
+    <ul>
+      <li><b>Rate still applies</b>, against the track's own clock: &times;1 = one step per pulse,
+        /2 = every second pulse, &times;2 = two steps per pulse. Fractional rates keep their exact
+        long-run ratios; divided rates land on the track's own downbeat.</li>
+      <li><b>Clock source / BPM / the Global Clock input don't touch it.</b> Same threshold as the
+        master: rise above ~1V, fall back below ~0.1V.</li>
+      <li><b>Run</b> stops own-clock tracks too. <b>Freeze</b> holds them like any other track (the
+        clock is still tracked, so they resume in phase).</li>
+      <li><b>Reset input</b> restarts an own-clock track at step 1 on <i>its</i> next pulse.</li>
+      <li><b>Clock out</b> is still the master's clock. No pulses on a track's bus means that
+        track doesn't advance.</li>
+    </ul>
+
     <h3>MIDI (v1.2)</h3>
     <p>Shoal can send MIDI note out per track, and can be clocked FROM MIDI instead of a CV or
     internal clock - useful on its own, and it's how Shoal talks to other algorithms on the
@@ -454,7 +473,7 @@
   <section id="params">
     <h2>The parameter pages</h2>
     <p>Exit the custom view and everything lives on 17 standard pages. Every parameter - all
-    233 of them - is CV/MIDI-mappable and saved in presets. Track parameters are prefixed
+    241 of them - is CV/MIDI-mappable and saved in presets. Track parameters are prefixed
     <code>T1…T8</code> in mapping menus.</p>
 
     <h3>Global</h3>
@@ -462,7 +481,7 @@
     <table class="wide">
       <thead><tr><th>Parameter</th><th>Range</th><th>What it does</th></tr></thead>
       <tbody>
-        <tr><td>Clock source</td><td>External / Internal / MIDI</td><td>Where ticks come from (default Internal - a fresh Shoal runs on its own). MIDI locks to incoming realtime MIDI clock (24 PPQN); Start resets to step 1, Continue resumes, Stop halts - Run must also be On</td></tr>
+        <tr><td>Clock source</td><td>External / Internal / MIDI</td><td>Where ticks come from. <code>External</code> means a bus: the <i>Clock input</i> parameter, which can be a physical input or another algorithm's output. <code>Internal</code> is Shoal's own BPM clock (default - a fresh Shoal runs on its own). MIDI locks to incoming realtime MIDI clock (24 PPQN); Start resets to step 1, Continue resumes, Stop halts - Run must also be On</td></tr>
         <tr><td>BPM</td><td>20–300</td><td>Internal clock speed. ×1 = one step per beat (quarter notes); ×4 = 16ths. Ignored while the clock is External (but remembered, so you can set a tempo before switching over)</td></tr>
         <tr><td>Run</td><td>Off / On</td><td>Master play/pause (mappable = external transport)</td></tr>
         <tr><td>Freeze</td><td>Off / On</td><td>Hold every sounding note as a chord; nothing advances. Clock out behaviour: see <i>Frozen clock out</i></td></tr>
@@ -565,6 +584,16 @@
       </tbody>
     </table>
     </div>
+    <p>Each routing page also carries the track's <b>Clock input</b> (new in v1.3 &ndash; see
+    Per-track clocks above):</p>
+    <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Parameter</th><th>Range</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Clock input</td><td>bus / none</td><td>This track's own clock. None (default) = follow the master clock; a bus = step on that bus's pulses instead, independent of the master</td></tr>
+      </tbody>
+    </table>
+    </div>
   </section>
 
   <canvas class="divider" width="256" height="14" data-i="2"></canvas>
@@ -626,7 +655,7 @@
         CV-map Transpose instead for chord progressions on one voice, always in key.</p>
         <span class="set">CV → <b>Root note</b>, <b>Scale</b> or <b>Transpose</b></span></div>
     </div>
-    <p style="margin-top:14px">Every one of Shoal's 233 parameters is mappable - a ramp rising
+    <p style="margin-top:14px">Every one of Shoal's 241 parameters is mappable - a ramp rising
     over your set on <b>Evolve</b>, <b>Weight</b> or <b>Chance</b> is form-level automation
     with no hands. Solo and the pot punch-home gestures are deliberately <i>not</i>
     parameters: those stay under your fingers. Mute is mappable.</p>
@@ -644,7 +673,9 @@
       <dd>Run is Off, or <i>Clock source</i> is <code>External</code> and no clock is
       arriving on the input the <i>Clock input</i> parameter points at, or <i>Clock source</i>
       is <code>MIDI</code> and no realtime MIDI clock (and a Start or Continue) has arrived yet.
-      (A fresh Shoal defaults to <code>Internal</code> and runs on its own.)</dd>
+      (A fresh Shoal defaults to <code>Internal</code> and runs on its own.) A track whose
+      <i>Clock input</i> (Routing page) is set only moves when pulses arrive on that bus,
+      whatever the Clock source says.</dd>
       <dt>No MIDI notes, even with a channel set.</dt>
       <dd><i>MIDI dest</i> is <code>None</code>, or set to destinations nothing is listening
       on. Check the track isn't muted or soloed-out either - MIDI note out follows the same

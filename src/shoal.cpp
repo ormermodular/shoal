@@ -8,27 +8,29 @@
  * can follow one another like fish in a shoal; a reseed is the shoal
  * turning.
  *
- *  - 8 tracks, each generating a seeded random melody: 64 steps max,
- *    per-track length (1-64) and clock rate (/64 ... x64)
- *  - Patterns are a pure function of the track's Seed parameter, so they
- *    loop identically and are recalled exactly by presets
- *  - Per-track CHANCE, NOTE-/NOTE+ (scale steps), OCTAVE-/OCTAVE+,
- *    NOTE CHANCE, GATE length, TIE chance, fixed octave offset
- *  - Linked-follow sampling: a track can mirror another track's material
- *    (reseeds propagate) filtered through its own settings
- *  - Global scale quantisation (all tracks), external or internal clock,
- *    reset input, per-track and global reseed (armed, land at loop start),
- *    reseed trigger input, per-track pattern Shift
- *  - Pitch CV at 1V/oct (0V = C3) with per-track scale/offset, gates
- *    1-10V (default 5V); 16 individually routable outputs
- *  - Custom UI on pots and encoders; buttons 1-4 left to the OS
- *  - Idle screensaver: the shoal itself swims the screen, one fish per
- *    track, darting on every note - an ambient view of the patch
+ *  - 8 tracks, up to 64 steps each, with their own Length, Rate
+ *    (/64 ... x64, including fractional ratios) and one of 15 Directions
+ *  - A pattern is a pure function of the track's Seed, so it loops
+ *    identically and presets recall it exactly; nothing is stored
+ *  - Per track: Chance, Breathe, Note / Oct variation, Evolve, Gate
+ *    length, Tie, Slop, Octave, Transpose, Shift, Mute; a track can follow
+ *    (sample) another track's material
+ *  - Global scale and root, Weight (consonance gravity), Freeze, Run
+ *  - Clock: external (bus), internal (BPM) or MIDI realtime; reset and
+ *    reseed trigger inputs; every track can instead take its own Clock
+ *    input
+ *  - Outputs per track: gate and 1V/oct pitch (0V = C3, scale and offset
+ *    adjustable, gate 1-10V), MIDI note out, a seeded drift CV (Current)
+ *    and an end-of-sequence trigger; plus a master Clock out
+ *  - Custom UI on the pots and encoders (buttons 1-4 are left to the
+ *    NT), and an idle screensaver: one fish per track, darting on every
+ *    note
  *
- * MIT License. Built against the distingNT_API (kNT_apiVersionCurrent).
+ * MIT License. Built against the distingNT_API.
  */
 
 #include <stddef.h>
+#include <string.h>
 #include <new>
 #include <distingnt/api.h>
 
@@ -84,23 +86,17 @@ enum
 	kTrackBase = kNumGlobalParams,
 	kRoutingBase = kTrackBase + kNumTracks * kNumTrackParams,
 	kNumRoutingParams = 4,				// gate out, gate mode, pitch out, pitch mode (gate first - NT convention)
-	// Clock out is appended AFTER the routing block so every earlier
-	// parameter keeps its index - beta.8 presets load unchanged
+	// Everything from here on is appended after the earlier blocks, so no
+	// released parameter ever changes index (presets store them by index).
 	kGClockOut = kRoutingBase + kNumTracks * kNumRoutingParams,
 	kGClockOutMode,
-	// v1.1: everything below is APPENDED - v1.0.0 preset indices unchanged
 	kGReseedIn,			// trigger input: each rising edge is a reseed-all gesture
 	kGFreezeClock,		// what Clock out does while frozen: Stops / Runs
 	kExtBase,			// per-track extras, one block of kNumExtParams per track
 	kNumExtParams = 4,
-	// v1.2: MIDI velocity and destination are GLOBAL (one shared setting
-	// for every track), not per-track. Originally per-track; changed
-	// 24 Aug 2026 after the real-hardware parameter ceiling was found
-	// (~241 params, empirically bisected - see PROJECT-NOTES.md "the
-	// real ceiling") forced v1.2's total back down from 255. Channel
-	// stays per-track - that's the one MIDI setting testers specifically
-	// asked to vary per track; velocity/destination didn't have an
-	// equivalent request, so they're the ones that gave way.
+	// MIDI velocity and destination are global; only the channel is
+	// per-track. The parameter count is capped (see the static_assert
+	// below the parameter table), which is why the other two are shared.
 	kGMidiVelocity = kExtBase + kNumTracks * kNumExtParams,
 	kGMidiDest,
 	// v1.2: MIDI channel, one param per track (0 = off).
@@ -116,7 +112,13 @@ enum
 	// time a track completes Length advances. Bus only, unchanged.
 	kEosBase = kCurrentBase + kNumTracks * kNumCurrentParams,
 	kNumEosParams = 1,	// EOS out
-	kNumParameters = kEosBase + kNumTracks * kNumEosParams,
+	// v1.3: per-track Clock input (0 = follow the master clock). A track
+	// with a bus assigned runs its Rate against its own pulses, independent
+	// of Clock source/Clock input. One param per track, appended last so
+	// every released index is unchanged.
+	kClkBase = kEosBase + kNumTracks * kNumEosParams,
+	kNumClkParams = 1,
+	kNumParameters = kClkBase + kNumTracks * kNumClkParams,
 };
 
 enum
@@ -136,24 +138,18 @@ enum
 // same shape as EOS, hence the single-arg macros matching EP() below.
 #define MP( t )			( kMidiBase + (t) )
 #define CP( t )			( kCurrentBase + (t) )
-// EOS is bus-only (no mode param - see TRACK_EOS() below): the disting NT
-// API addresses page parameters via a uint8_t (api.h's _NT_parameterPage::
-// params), which caps a plugin at 256 total parameters - real, but NOT the
-// binding ceiling in practice; the real one is ~241, found empirically on
-// real hardware (see PROJECT-NOTES.md "the real ceiling"). A trigger bus
-// is a poor fit for Add mode anyway - always Replace, one param, done.
+#define KP( t )			( kClkBase + (t) )		// per-track Clock input
+// EOS is bus-only: a trigger bus always owns what it is patched to, so
+// there is no Add/Replace mode and one parameter per track is enough.
 #define EP( t )			( kEosBase + (t) )
 
-// v1.2: "MIDI" appended (never inserted - Clock source is a preset value,
-// same append-only discipline as the rate table). External/Internal keep
-// their existing meaning and index.
+// "MIDI" is appended after the original two: Clock source is a stored
+// value, so External and Internal keep their index.
 static char const * const enumStringsClockSource[] = { "External", "Internal", "MIDI" };
-// v1.2: MIDI destination is a literal _NT_midiDestination bitmask (bit0
-// breakout, bit1 select bus, bit2 USB, bit3 internal - see api.h), so the
-// enum index IS the value passed straight to NT_sendMidi3ByteMessage, no
-// lookup table needed. "Internal" (same-NT routing to another algorithm,
-// e.g. Poly FM) was a real, tester-validated use case, not a hypothetical -
-// see PROJECT-NOTES.md.
+// MIDI destination is a literal _NT_midiDestination bitmask (bit0 breakout,
+// bit1 select bus, bit2 USB, bit3 internal - see api.h), so the enum index
+// is the value passed straight to NT_sendMidi3ByteMessage. "Internal" routes
+// to another algorithm in the same NT (e.g. Poly FM).
 static char const * const enumStringsMidiDest[] = {
 	"None", "Breakout", "Bus", "Breakout+Bus",
 	"USB", "Breakout+USB", "Bus+USB", "Brk+Bus+USB",
@@ -163,22 +159,12 @@ static char const * const enumStringsMidiDest[] = {
 static char const * const enumStringsOffOn[] = { "Off", "On" };
 static char const * const enumStringsFrozenClock[] = { "Stops", "Runs" };
 static char const * const enumStringsSaver[] = { "Off", "1 min", "5 min" };
-// v1.2: all 29 rates kept in true ascending numeric order (Oliver's
-// call, 24 Aug 2026 - a deliberate, one-time break of the "always
-// append, never reorder" rule that held through v1.1.0 and the first
-// two v1.2 rate appends, made because v1.2.0-beta.1 has never shipped
-// or been hardware-tested, so no preset in the wild references indices
-// 21-28 yet; every index below is free to move exactly once). Non-
-// integer rates don't fit the plain divide-or-multiply table on their
-// own; num/den express them as a ratio instead (e.g. num=3,den=2 for
-// x1.5, num=2,den=3 for /1.5), the same representation every integer
-// entry already uses (a divide is just den=D,num=1; a multiply is
-// num=M,den=1) - see the Bresenham/Euclidean scheduler in the
-// master-tick loop. The six non-integer ratios (/5.3, /2.6, x1.25,
-// x1.3, x2.6, x5.3) are literal decimals, confirmed with Oliver, not
-// rounded to a cleaner fraction (e.g. x1.3 is exactly 13/10, not 4/3).
-// IMPORTANT: from this point on the
-// append-only rule is back in force - any future rate goes at the end.
+// The 29 rates in ascending order. A rate is the ratio num/den of
+// master-clock ticks to steps (/D is num=1,den=D; xM is num=M,den=1), so
+// fractional rates fit the same scheduler: x1.5 is 3/2, /1.5 is 2/3. The
+// six non-integer ratios (/5.3, /2.6, x1.25, x1.3, x2.6, x5.3) are exact
+// decimals (x1.3 is 13/10, not 4/3). Stored by index: any new rate goes
+// at the end.
 static char const * const enumStringsRate[] = {
 	"/64", "/32", "/16", "/8", "/7", "/6", "/5.3", "/5", "/4", "/3",
 	"/2.6", "/2", "/1.5",
@@ -200,16 +186,12 @@ enum
 	kDirTide,			// forwards, rotating the loop start one step per pass
 	kDirShuffle,		// every step once per pass, new seeded order each pass
 	kDirPools,			// dwell in a small pocket of steps, then hop to another
-	// v1.2: New Directions, appended (never inserted - existing preset
-	// indices must never move). Zero new parameters - all three read only
-	// existing per-track state (activeSeed, pos, pass, kTSource), same as
-	// every mode above them.
+	// Appended after the original nine, so stored Direction values keep
+	// their meaning. Each reads only existing per-track state.
 	kDirStride,			// skip by a seed-derived amount instead of ±1
 	kDirGravity,		// seed-derived chance each step to snap back to step 1
 	kDirConverge,		// folds inward from both ends toward the middle
 	kDirDiverge,		// unfolds outward from the middle toward both ends
-	// v1.2.0-beta.1, appended same day (25 Aug 2026): two more, again
-	// zero new parameters.
 	kDirSkitter,		// like Random, but never repeats the same step twice in a row
 	kDirAnchor,			// alternates step 1 with each other step in turn
 };
@@ -314,10 +296,15 @@ static char const * const enumStringsSource[] = {
 // track's own step period), fired from a pure "every Length advances"
 // counter - independent of Direction mode, so Random/Drunk/Pools (whose
 // loop-origin flag is true on every step) still get a meaningful, evenly
-// spaced pulse rather than firing continuously. See PROJECT-NOTES.md.
-// Bus only, no Add/Replace mode param - see EP() above for why.
+// spaced pulse rather than firing continuously.
+// Bus only, no Add/Replace mode - see EP() above.
 #define TRACK_EOS() \
 	NT_PARAMETER_IO( "EOS out", 0, 0, kNT_unitCvOutput )
+
+// v1.3 per-track Clock input: defaults to None = follow the master clock,
+// so every existing preset behaves exactly as before.
+#define TRACK_CLOCK() \
+	NT_PARAMETER_CV_INPUT( "Clock input", 0, 0 )
 
 #define PARAM_TABLE( bpmName ) \
 	{ .name = "Clock source", .min = 0, .max = 2, .def = 1, .unit = kNT_unitEnum, .scaling = 0, .enumStrings = enumStringsClockSource }, \
@@ -347,11 +334,17 @@ static char const * const enumStringsSource[] = {
 	TRACK_CURRENT() TRACK_CURRENT() TRACK_CURRENT() TRACK_CURRENT() \
 	TRACK_CURRENT() TRACK_CURRENT() TRACK_CURRENT() TRACK_CURRENT() \
 	TRACK_EOS() TRACK_EOS() TRACK_EOS() TRACK_EOS() \
-	TRACK_EOS() TRACK_EOS() TRACK_EOS() TRACK_EOS()
+	TRACK_EOS() TRACK_EOS() TRACK_EOS() TRACK_EOS() \
+	TRACK_CLOCK() TRACK_CLOCK() TRACK_CLOCK() TRACK_CLOCK() \
+	TRACK_CLOCK() TRACK_CLOCK() TRACK_CLOCK() TRACK_CLOCK()
 
 static const _NT_parameter parameters[] = { PARAM_TABLE( "BPM" ) };
 
 static_assert( ARRAY_SIZE(parameters) == kNumParameters, "parameter count mismatch" );
+// The NT refuses to construct a plug-in with more than 241 parameters
+// (measured on hardware: 241 loads, 242 does not; the figure is not in the
+// API). Shoal is exactly at the limit: a new parameter needs one removed.
+static_assert( kNumParameters <= 241, "over the 241-parameter hardware ceiling" );
 
 static const uint8_t pageGlobal[] = {
 	kGClockSource, kGBPM, kGRun, kGFreeze, kGScale, kGRoot, kGWeight,
@@ -362,8 +355,10 @@ static const uint8_t pageGlobal[] = {
 #define TRACK_PAGE( t ) \
 	{ TP(t,0), TP(t,1), TP(t,2), XP(t,kXShift), TP(t,3), TP(t,4), TP(t,5), TP(t,6), TP(t,7), \
 	  TP(t,8), TP(t,9), TP(t,10), TP(t,11), TP(t,12), TP(t,13), TP(t,14), TP(t,15) }
+// The Routing page lists the track's input first, then its outputs (gate
+// before pitch, each bus followed by its own mode).
 #define ROUT_PAGE( t ) \
-	{ RP(t,0), RP(t,1), XP(t,kXGateVolts), RP(t,2), RP(t,3), XP(t,kXPitchScale), XP(t,kXPitchOffset), \
+	{ KP(t), RP(t,0), RP(t,1), XP(t,kXGateVolts), RP(t,2), RP(t,3), XP(t,kXPitchScale), XP(t,kXPitchOffset), \
 	  MP(t), CP(t), EP(t) }
 
 static const uint8_t pageT0[] = TRACK_PAGE(0);
@@ -458,6 +453,15 @@ struct TrackState
 	// gateRemaining/clockPulse elsewhere in this file.
 	uint32_t	eosCount;
 	uint32_t	eosRemaining;
+	// v1.3 per-track clock: only used while this track's Clock input is
+	// assigned. Its own edge detector, period estimate, grid counter (the
+	// per-track equivalent of the master tickCount) and a reset waiting
+	// for its next edge.
+	bool		ownHigh;
+	bool		ownReset;
+	uint32_t	ownSince;
+	uint32_t	ownPeriod;
+	uint32_t	ownTicks;
 };
 
 struct _melodySeq_DTC
@@ -729,6 +733,12 @@ void calculateRequirements( _NT_algorithmRequirements& req, const int32_t* speci
 
 _NT_algorithm* construct( const _NT_algorithmMemoryPtrs& ptrs, const _NT_algorithmRequirements& req, const int32_t* specifications )
 {
+	// The NT does not hand out zeroed memory: clear every block this
+	// plug-in requested before anything reads it. Shoal writes its state
+	// before use today, but that is a property of the code, not a
+	// guarantee - one memset per block, once, at load.
+	memset( ptrs.dtc, 0, req.dtc );
+	memset( ptrs.sram, 0, req.sram );
 	_melodySeq_DTC* dtc = (_melodySeq_DTC*)ptrs.dtc;
 	for ( int t = 0; t < kNumTracks; ++t )
 	{
@@ -765,6 +775,11 @@ _NT_algorithm* construct( const _NT_algorithmMemoryPtrs& ptrs, const _NT_algorit
 		tr.currentVolts = 0.0f;
 		tr.eosCount = 0;
 		tr.eosRemaining = 0;
+		tr.ownHigh = false;
+		tr.ownReset = false;
+		tr.ownSince = 0;
+		tr.ownPeriod = 0;
+		tr.ownTicks = 0;
 	}
 	dtc->clockHigh = false;
 	dtc->resetHigh = false;
@@ -878,11 +893,9 @@ void parameterChanged( _NT_algorithm* self, int p )
 	}
 	if ( p == kGMidiDest )
 	{
-		// destination is global now (v1.2, moved off per-track for the
-		// real-hardware parameter budget - see PROJECT-NOTES.md). Changing
-		// it affects every track's already-open note, not just one, so
-		// close all of them - each on the destination it was opened with,
-		// rather than leaving any stuck until that track's next advance.
+		// The destination is global, so changing it affects every track's
+		// open note: close all of them, each on the destination it was
+		// opened with, rather than leaving any stuck until its next advance.
 		for ( int t = 0; t < kNumTracks; ++t )
 		{
 			TrackState& tr = dtc->tracks[t];
@@ -1051,12 +1064,7 @@ static void advanceTrack( _melodySeqAlgorithm* pThis, int t, uint32_t stepPeriod
 		// one back" crawl - pairs (p, p+2) for p = 0..length-1, giving
 		// a period of 2*Length rather than Length. tr.phase counts
 		// steps within that doubled cycle (fits uint8_t up to Length
-		// 64 -> period 128). Replaces the original seed-derived jump
-		// version - tester feedback (25 Aug 2026) found the seeded
-		// jump too abstract/unpredictable by ear; this reads as a
-		// distinct, recognisable rhythmic hop instead, and nothing
-		// else in the Direction list has this overlapping-repeat
-		// texture.
+		// 64 -> period 128).
 		uint32_t period = (uint32_t)length * 2;
 		tr.phase = (uint8_t)( ( tr.phase + 1 ) % period );
 		uint32_t n = tr.phase;
@@ -1083,14 +1091,9 @@ static void advanceTrack( _melodySeqAlgorithm* pThis, int t, uint32_t stepPeriod
 	}
 	case kDirConverge:
 	{
-		// Metropolix-style fold: alternates from both ends of the
-		// pattern inward toward the middle (0, length-1, 1, length-2,
-		// ...). Fixed and self-contained - no Sample source needed.
-		// Replaces the original "chase the Sample source's position"
-		// version - tester feedback (25 Aug 2026): that read as one
-		// track chasing another, not as the pattern folding in on
-		// itself the name promises, and did nothing at all without a
-		// source set.
+		// Fold: alternates from both ends of the pattern inward toward
+		// the middle (0, length-1, 1, length-2, ...). Self-contained - no
+		// Sample source needed.
 		tr.phase = (uint8_t)( ( tr.phase + 1 ) % length );
 		uint32_t n = tr.phase;
 		tr.pos = (int)( ( n % 2 == 0 ) ? ( n / 2 ) : ( (uint32_t)length - 1 - n / 2 ) );
@@ -1098,16 +1101,14 @@ static void advanceTrack( _melodySeqAlgorithm* pThis, int t, uint32_t stepPeriod
 	}
 	case kDirDiverge:
 	{
-		// Metropolix-style unfold: the mirror of Converge above - starts
-		// near the pattern's middle and alternates outward to both
-		// ends. tr.pos = floor( (length-1)/2 + offset(phase) ), where
-		// offset zigzags 0, +1, -1, +2, -2, ... - verified by a host
-		// harness across Length 1..64 that this always visits every
-		// step exactly once per pass, for both odd and even Length
-		// (see PROJECT-NOTES for the derivation). The starting position
-		// itself is seeded in the reset block above (this case's phase
-		// 0 isn't 0, unlike every other mode) - see the kDirDiverge
-		// special case there.
+		// Unfold: the mirror of Converge above - starts near the pattern's
+		// middle and alternates outward to both ends.
+		// tr.pos = floor( (length-1)/2 + offset(phase) ), where offset
+		// zigzags 0, +1, -1, +2, -2, ... A host harness over Length 1..64
+		// confirms it visits every step exactly once per pass, for odd and
+		// even Length. The starting position is seeded in the reset block
+		// above (this case's phase 0 isn't 0, unlike every other mode) -
+		// see the kDirDiverge special case there.
 		tr.phase = (uint8_t)( ( tr.phase + 1 ) % length );
 		uint32_t n = tr.phase;
 		int k = (int)( ( n + 1 ) / 2 );
@@ -1246,10 +1247,9 @@ static void advanceTrack( _melodySeqAlgorithm* pThis, int t, uint32_t stepPeriod
 	// would make EOS pulse continuously on those three modes instead of
 	// marking anything meaningful. Counting raw advances instead gives
 	// every direction mode the same, evenly-spaced "every Length steps"
-	// pulse - Oliver's call (24 Aug 2026) over suppressing EOS on the
-	// three unordered modes. Unconditional like Currents above: fires
-	// regardless of Mute/Chance, since it's about the sequence's
-	// structure, not which steps happen to sound.
+	// pulse, rather than suppressing EOS on the three unordered modes.
+	// Unconditional like Currents above: fires regardless of Mute/Chance,
+	// since it marks the sequence's structure, not which steps sound.
 	tr.eosCount += 1;
 	if ( tr.eosCount >= (uint32_t)length )
 	{
@@ -1461,6 +1461,90 @@ void midiRealtime( _NT_algorithm* self, uint8_t byte )
 	}
 }
 
+// One track's share of a clock tick: Bresenham/Euclidean scheduling against
+// a grid counter. The master clock calls this for every track following it
+// (tickCount = the global grid); a track with its own Clock input calls it
+// on its own edges with its own counter (v1.3). `prime` marks a reset tick:
+// the track restarts at step 1 and the tick is a grid origin.
+static void fanOutTrackTick( _melodySeqAlgorithm* pThis, int t, uint32_t tickCount,
+							 uint32_t period, bool prime, bool anySolo )
+{
+	_melodySeq_DTC* dtc = pThis->dtc;
+	const int16_t* v = pThis->v;
+	TrackState& tr = dtc->tracks[t];
+	int rate = v[ TP( t, kTRate ) ];
+	uint32_t num = rateMult[rate], den = rateDiv[rate];
+
+	if ( prime )
+	{
+		tr.pos = -1;
+		tr.extraPending = 0;
+		tr.slopCountdown = 0;
+		tr.tieHeld = false;
+		tr.eosCount = 0;	// EOS's "every Length steps" cycle realigns to the reset too
+	}
+
+	// Bresenham/Euclidean scheduling: over den ticks the track advances
+	// exactly num times, spread as evenly as possible. It is a pure
+	// function of the grid counter (never accumulated), so changing the
+	// rate never drifts, and one formula covers every rate: /4 skips
+	// ticks, x2 fires twice, x1.5 (num=3, den=2) alternates 2,1,2,1 and
+	// /1.5 (num=2, den=3) gives 1,1,0. No 64-bit division: tickCount * num
+	// stays inside uint32 for any realistic session.
+	//
+	// Ceiling phase: each group of den ticks advances on its FIRST tick,
+	// so divided rates land on the downbeat shared with tick 0 (a /4
+	// track steps on ticks 0, 4, 8), fractional rates front-load their
+	// extra advance onto the beat, and a reset's forced advance at tick 0
+	// coincides with the natural schedule instead of adding a second hit.
+	uint32_t before = ( tickCount * num + den - 1 ) / den;
+	uint32_t after = ( ( tickCount + 1 ) * num + den - 1 ) / den;
+	uint32_t count = after - before;
+	uint32_t stepPeriod = ( period * den ) / num;	// constant average spacing - correct for gate-length math even though individual ticks fire unevenly
+
+	if ( prime )
+	{
+		// reset is always a grid origin, regardless of this
+		// tick's natural cadence - land tight, then resume the
+		// normal schedule from here
+		advanceTrack( pThis, t, stepPeriod, anySolo );
+		tr.extraPending = ( count > 0 ) ? count - 1 : 0;
+		tr.subPeriod = stepPeriod;
+		tr.subCountdown = stepPeriod;
+	}
+	else if ( count == 0 )
+	{
+		tr.extraPending = 0;
+	}
+	else
+	{
+		scheduleAdvance( pThis, t, stepPeriod, anySolo );
+		tr.extraPending = count - 1;
+		tr.subPeriod = stepPeriod;
+		tr.subCountdown = stepPeriod;
+	}
+}
+
+// Edge detector for a track's own clock bus (same thresholds as the master:
+// rising above 1V, re-armed below 0.1V). Returns true on a tick sample.
+static bool ownClockEdge( TrackState& tr, float c, bool run )
+{
+	bool tick = false;
+	if ( !tr.ownHigh && c > 1.0f )
+	{
+		tr.ownHigh = true;
+		if ( tr.ownSince > 0 )
+			tr.ownPeriod = tr.ownSince;
+		tr.ownSince = 0;
+		tick = run;
+	}
+	else if ( tr.ownHigh && c < 0.1f )
+		tr.ownHigh = false;
+	if ( tr.ownSince < 0x7FFFFFFF )
+		tr.ownSince += 1;
+	return tick;
+}
+
 void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 {
 	_melodySeqAlgorithm* pThis = (_melodySeqAlgorithm*)self;
@@ -1506,6 +1590,11 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 			? busFrames + ( v[kGResetIn] - 1 ) * numFrames : NULL;
 	const float* reseedIn = ( v[kGReseedIn] > 0 )
 			? busFrames + ( v[kGReseedIn] - 1 ) * numFrames : NULL;
+	// v1.3: per-track clock buses (NULL = this track follows the master)
+	const float* ownIn[kNumTracks];
+	for ( int t = 0; t < kNumTracks; ++t )
+		ownIn[t] = ( v[ KP( t ) ] > 0 )
+				? busFrames + ( v[ KP( t ) ] - 1 ) * numFrames : NULL;
 	float* clkOut = ( v[kGClockOut] > 0 )
 			? busFrames + ( v[kGClockOut] - 1 ) * numFrames : NULL;
 	bool clkRep = v[kGClockOutMode];
@@ -1601,6 +1690,11 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 			dtc->tracks[t].eosRemaining = 0;
 		for ( int i = 0; i < numFrames; ++i )
 		{
+			// own-clock tracks: the grid and period estimate keep running
+			// through a Freeze (like the master's), only the fan-out stops
+			for ( int t = 0; t < kNumTracks; ++t )
+				if ( ownIn[t] && ownClockEdge( dtc->tracks[t], ownIn[t][i], run ) )
+					dtc->tracks[t].ownTicks += 1;
 			if ( clockRuns )
 			{
 				uint32_t period;
@@ -1670,6 +1764,9 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 			{
 				dtc->resetHigh = true;
 				dtc->resetPrime = true;
+				for ( int t = 0; t < kNumTracks; ++t )
+					if ( ownIn[t] )
+						dtc->tracks[t].ownReset = true;	// lands on that track's next edge
 			}
 			else if ( dtc->resetHigh && r < 0.1f )
 				dtc->resetHigh = false;
@@ -1679,67 +1776,30 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 		uint32_t period;
 		bool tick = masterClockTick( dtc, clockIn, clockMode, run, i, period );
 
+		// own-clock tracks (v1.3): each runs on its own pulses, with its own
+		// grid counter; a pending reset lands on its next edge
+		for ( int t = 0; t < kNumTracks; ++t )
+		{
+			if ( !ownIn[t] ) continue;
+			TrackState& tr = dtc->tracks[t];
+			if ( ownClockEdge( tr, ownIn[t][i], run ) )
+			{
+				bool prime = tr.ownReset;
+				if ( prime ) { tr.ownTicks = 0; tr.ownReset = false; }
+				uint32_t per = tr.ownPeriod ? tr.ownPeriod : NT_globals.sampleRate / 4;
+				fanOutTrackTick( pThis, t, tr.ownTicks, per, prime, anySolo );
+				tr.ownTicks += 1;
+			}
+		}
+
 		if ( tick )
 		{
 			if ( dtc->resetPrime )
 				dtc->tickCount = 0;		// the reset tick is a grid origin for every divider
 
 			for ( int t = 0; t < kNumTracks; ++t )
-			{
-				TrackState& tr = dtc->tracks[t];
-				int rate = v[ TP( t, kTRate ) ];
-				uint32_t num = rateMult[rate], den = rateDiv[rate];
-
-				if ( dtc->resetPrime )
-				{
-					tr.pos = -1;
-					tr.extraPending = 0;
-					tr.slopCountdown = 0;
-					tr.tieHeld = false;
-					tr.eosCount = 0;	// EOS's "every Length steps" cycle realigns to the reset too
-				}
-
-				// Bresenham/Euclidean scheduling: on average exactly num
-				// advances per den master ticks, phase-locked to the
-				// global grid (a pure function of tickCount, never
-				// accumulated, so rate changes never drift). Unifies what
-				// used to be two separate branches - slow rates skipped
-				// ticks, fast rates queued extra sub-steps within one
-				// tick - into one formula that also covers fractional
-				// rates: 1.5x (num=3,den=2) naturally alternates
-				// 1,2,1,2... advances/tick; /1.5 (num=2,den=3) naturally
-				// gives 0,1,1,0,1,1... - both verified against the old
-				// two-branch logic across all 21 existing rate table
-				// entries before this shipped. tickCount*num stays well
-				// inside uint32 for any realistic session (lesson 1: no
-				// 64-bit division).
-				uint32_t before = ( dtc->tickCount * num ) / den;
-				uint32_t after = ( ( dtc->tickCount + 1 ) * num ) / den;
-				uint32_t count = after - before;
-				uint32_t stepPeriod = ( period * den ) / num;	// constant average spacing - correct for gate-length math even though individual ticks fire unevenly
-
-				if ( dtc->resetPrime )
-				{
-					// reset is always a grid origin, regardless of this
-					// tick's natural cadence - land tight, then resume the
-					// normal schedule from here
-					advanceTrack( pThis, t, stepPeriod, anySolo );
-					tr.extraPending = ( count > 0 ) ? count - 1 : 0;
-					tr.subPeriod = stepPeriod;
-					tr.subCountdown = stepPeriod;
-				}
-				else if ( count == 0 )
-				{
-					tr.extraPending = 0;
-				}
-				else
-				{
-					scheduleAdvance( pThis, t, stepPeriod, anySolo );
-					tr.extraPending = count - 1;
-					tr.subPeriod = stepPeriod;
-					tr.subCountdown = stepPeriod;
-				}
-			}
+				if ( !ownIn[t] )
+					fanOutTrackTick( pThis, t, dtc->tickCount, period, dtc->resetPrime, anySolo );
 			dtc->resetPrime = false;
 			dtc->tickCount += 1;
 		}
@@ -1819,11 +1879,10 @@ void step( _NT_algorithm* self, float* busFrames, int numFramesBy4 )
 					gateOut[t][i] += gate;
 			}
 
-			// Currents (v1.2): smoothstep from currentPrev towards
-			// currentTarget over currentPeriod samples. Plain multiply/add
-			// only (no cosf/libm call to verify on this bare-metal target -
-			// same caution as lesson 1 for 64-bit division) - t*t*(3-2t)
-			// gives the same eased S-curve shape a cosine crossfade would.
+			// Currents: smoothstep from currentPrev towards currentTarget
+			// over currentPeriod samples. Plain multiply/add (t*t*(3-2t)
+			// gives the S-curve of a cosine crossfade) so no libm call is
+			// needed on the NT.
 			if ( tr.currentElapsed < tr.currentPeriod )
 				tr.currentElapsed += 1;
 			float ct = ( tr.currentPeriod > 0 )
@@ -2409,21 +2468,24 @@ void setupUi( _NT_algorithm* self, _NT_float3& pots )
 // Misc callbacks
 // ---------------------------------------------------------------------------
 
+// Per-track parameters sit in blocks of `perTrack` entries per track; the
+// global ones (everything before kTrackBase, plus Clock out, Reseed input,
+// Frozen clock and the MIDI velocity/destination) carry no prefix.
 int parameterUiPrefix( _NT_algorithm* self, int p, char* buff )
 {
+	static const struct { int base, perTrack; } blocks[] = {
+		{ kTrackBase,   kNumTrackParams },
+		{ kRoutingBase, kNumRoutingParams },
+		{ kExtBase,     kNumExtParams },
+		{ kMidiBase,    kNumMidiParams },
+		{ kCurrentBase, kNumCurrentParams },
+		{ kEosBase,     kNumEosParams },
+		{ kClkBase,     kNumClkParams },
+	};
 	int t = -1;
-	if ( p >= kTrackBase && p < kRoutingBase )
-		t = ( p - kTrackBase ) / kNumTrackParams;
-	else if ( p >= kRoutingBase && p < kRoutingBase + kNumTracks * kNumRoutingParams )
-		t = ( p - kRoutingBase ) / kNumRoutingParams;		// Clock out sits past the routing block: no track prefix
-	else if ( p >= kExtBase && p < kExtBase + kNumTracks * kNumExtParams )
-		t = ( p - kExtBase ) / kNumExtParams;				// v1.1 extras are per-track again
-	else if ( p >= kMidiBase && p < kMidiBase + kNumTracks * kNumMidiParams )
-		t = ( p - kMidiBase ) / kNumMidiParams;			// v1.2 MIDI params are per-track too
-	else if ( p >= kCurrentBase && p < kCurrentBase + kNumTracks * kNumCurrentParams )
-		t = ( p - kCurrentBase ) / kNumCurrentParams;		// v1.2 Currents are per-track too
-	else if ( p >= kEosBase && p < kEosBase + kNumTracks * kNumEosParams )
-		t = ( p - kEosBase ) / kNumEosParams;				// v1.2 EOS is per-track too
+	for ( const auto& b : blocks )
+		if ( p >= b.base && p < b.base + kNumTracks * b.perTrack )
+			t = ( p - b.base ) / b.perTrack;
 	if ( t < 0 )
 		return 0;
 	buff[0] = 'T';
@@ -2439,7 +2501,7 @@ static const _NT_factory factory =
 	.name = "Shoal",
 	// version first: the algorithm browser truncates long descriptions,
 	// and the version is the one part that must always be visible
-	.description = "v1.2.0 - 8-track generative melody sequencer",
+	.description = "v1.3.0 - 8-track generative melody sequencer",
 	.numSpecifications = 0,
 	.calculateRequirements = calculateRequirements,
 	.construct = construct,
@@ -2453,6 +2515,12 @@ static const _NT_factory factory =
 	.setupUi = setupUi,
 	.parameterUiPrefix = parameterUiPrefix,
 };
+
+// Shoal is written for API v13 (firmware 1.15.0+). pluginEntry reports
+// kNT_apiVersionCurrent, so a newer SDK would silently raise the firmware
+// the plug-in demands: stop the build instead and decide deliberately.
+static_assert( kNT_apiVersionCurrent == kNT_apiVersion13,
+			   "SDK is newer than API v13: check the minimum firmware before building" );
 
 uintptr_t pluginEntry( _NT_selector selector, uint32_t data )
 {

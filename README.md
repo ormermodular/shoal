@@ -33,7 +33,7 @@ push a melody as far as you like and always find your way home.
 And it moves on its own. **Evolve** lets a share of steps quietly re-roll
 themselves on every pass, so at 5% a melody becomes a different melody over
 ten minutes without your hands on it. **Breathe** rests whole passes.
-The nine **directions** change how a pattern is walked rather than what it
+The fifteen **directions** change how a pattern is walked rather than what it
 contains, from plain reverse to tides, shuffles and pools. **Weight** pulls
 notes towards consonance when things get too wild. Tracks can **follow** one
 another for bass lines and counter-melodies that always agree. And when you
@@ -95,10 +95,13 @@ rest.
   gate output, routable to any physical output or aux bus. **All outputs
   default to None**, so a track touches no bus until you assign it and you
   build the shoal one deliberate voice at a time
+- **Per-track clocks** - give any track its own Clock input and it steps
+  on its own pulses, independent of the master clock, so one Shoal can sit
+  in several time worlds at once (None = follow the master, the default)
 - **Per track** - length 1 to 64, clock rate /64 to x64 including the odd
-  ratios (3, 5, 6 and 7, both ways), thirteen playback directions
+  ratios (3, 5, 6 and 7, both ways), fifteen playback directions
   (Forwards, Reverse, Pendulum, Random, Drunk, Pong, Tide, Shuffle,
-  Pools, Stride, Gravity, Converge, Diverge), pattern Shift (rotate the
+  Pools, Stride, Gravity, Converge, Diverge, Skitter, Anchor), pattern Shift (rotate the
   whole loop; a canon on a follower), Chance, bipolar Note and Oct
   variation amounts, gate length, tie chance, slop, octave offset,
   transpose in scale degrees, mute, seed
@@ -141,7 +144,7 @@ rest.
 - **Quantised reseeds** - a reseed arms and lands when the track wraps to
   step 1, so new patterns always enter on the grid. Per track, global,
   and from a dedicated trigger input
-- **Everything is CV and MIDI mappable** - all 233 parameters, through the
+- **Everything is CV and MIDI mappable** - all 241 parameters, through the
   module's own mapping system. Sequence the Seed for melody switching,
   breathe Freeze with a slow LFO, CV the Transpose for chord progressions
 - **The shoal screensaver** - leave the controls alone and the display
@@ -174,10 +177,11 @@ alongside the selected track's detail panel and the live pot assignments.
   scale, root note, weight, screensaver, clock and reset inputs, clock out,
   reseed all, MIDI velocity and destination
 - **Track 1 to 8** - the per-track controls above
-- **Routing 1 to 8** - gate and pitch output busses with add or replace
-  modes (gate listed first to match the other NT sequencers), a Current
-  and an EOS out bus (both Replace-only), plus each track's MIDI channel
-  (velocity and destination are global, set once on the Global page)
+- **Routing 1 to 8** - the track's Clock input (None follows the master
+  clock), gate and pitch output busses with add or replace modes (gate
+  listed first), a Current and an EOS out bus (both Replace-only), plus
+  the track's MIDI channel (velocity and destination are global, set once
+  on the Global page)
 
 Every one is a standard NT parameter, so all of them are CV and MIDI
 mappable and all of them are saved in presets. Changing a track's **Seed**
@@ -197,11 +201,15 @@ make        # builds plugins/shoal.o
 ```
 
 `make check` runs a quick syntax check with the host compiler if you do not
-have the ARM toolchain installed.
+have the ARM toolchain installed. `make test` runs the host tests (parameter
+table and pages, clocking, and construction from junk-filled memory),
+`make verify` checks the built object (version stamp, only symbols the NT
+exports, no writable statics) and `make release` packs `shoal-plugin.zip`.
 
 ## Repository layout
 
 - `src/shoal.cpp` - the plug-in, a single source file
+- `test/` - host tests (no hardware needed)
 - `docs/nt/MANUAL.md` - the disting NT user manual; `docs/vcv/MANUAL.md` - the VCV Rack manual
 - `Makefile` - cross-compiles for the Cortex-M7 with `arm-none-eabi-c++`
 

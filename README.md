@@ -42,7 +42,7 @@ want something new entirely you **reseed**, and the shoal turns.
 And it is all shareable: pass on your seed and your settings, and someone
 on the other side of the world hears exactly what you heard, note for note.
 
-<p align="center"><a href="https://ormermodular.github.io/shoal/">disting NT manual</a></p>
+<p align="center"><a href="https://ormermodular.github.io/shoal/vcv/">VCV Rack manual</a> · <a href="https://ormermodular.github.io/shoal/nt/">disting NT manual</a></p>
 
 ---
 
@@ -86,7 +86,7 @@ The algorithm appears in the list as **Shoal** (guid `Shol`).
    **Octave** to -1 or -2, **Rate** to /2 or /4, and thin it out with
    **Chance**.
 
-The [manual](https://ormermodular.github.io/shoal/) covers the rest, and there is rather a lot of
+The [manual](https://ormermodular.github.io/shoal/nt/) covers the rest, and there is rather a lot of
 rest.
 
 ## Features
@@ -202,7 +202,7 @@ have the ARM toolchain installed.
 ## Repository layout
 
 - `src/shoal.cpp` - the plug-in, a single source file
-- `docs/MANUAL.md` - the user manual
+- `docs/nt/MANUAL.md` - the disting NT user manual; `docs/vcv/MANUAL.md` - the VCV Rack manual
 - `Makefile` - cross-compiles for the Cortex-M7 with `arm-none-eabi-c++`
 
 ## Thanks

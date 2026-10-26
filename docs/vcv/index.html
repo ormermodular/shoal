@@ -1,0 +1,737 @@
+<title>Shoal for VCV Rack - User Manual</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#21262d; --panel-edge:#3a424c;
+    --ink:#cdd6df; --muted:#87929e; --accent:#e2a24a;
+    --oled:#05070a; --glow:rgba(140,190,255,.14);
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--mono);margin:0;padding:40px 20px 90px}
+  .wrap{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+  .eyebrow{color:var(--accent);font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+  h1{font-size:30px;font-weight:700;color:#eef2f6;margin:10px 0 4px;letter-spacing:.04em;text-wrap:balance}
+  .vstamp{color:var(--muted);font-size:11px;letter-spacing:.14em;margin:0 0 10px}
+  .lede{color:var(--muted);font-size:13.5px;line-height:1.7;max-width:64ch;margin:0}
+  .lede b{color:var(--ink)}
+  h2{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:600}
+  h3{font-size:13px;color:#e8eef5;margin:22px 0 8px;font-weight:700;letter-spacing:.02em}
+  section>h3:first-of-type{margin-top:0}
+  p{font-size:12.5px;line-height:1.75;color:var(--muted);margin:0 0 10px;max-width:70ch}
+  p b,li b{color:var(--ink)}
+  p code,li code,td code{color:var(--accent);background:rgba(226,162,74,.08);padding:0 4px;border-radius:3px;font-size:.95em}
+  ul,ol{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+  li{font-size:12.5px;line-height:1.7;color:var(--muted)}
+  li::marker{color:var(--accent)}
+  a{color:var(--accent)}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .toc a{color:var(--ink);text-decoration:none;font-size:10.5px;letter-spacing:.08em;
+    border:1px solid var(--panel-edge);border-radius:999px;padding:5px 12px;background:#161a1f}
+  .toc a:hover,.toc a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+
+  .panel{background:linear-gradient(180deg,#242a31,#1d2228);border:1px solid var(--panel-edge);
+    border-radius:12px;padding:22px 26px 24px;position:relative;
+    box-shadow:0 20px 50px rgba(0,0,0,.45)}
+  .screw{position:absolute;width:8px;height:8px;border-radius:50%;background:#12151a;border:1px solid #434c57}
+  .screw.tl{top:10px;left:10px}.screw.tr{top:10px;right:10px}
+  .screw.bl{bottom:10px;left:10px}.screw.br{bottom:10px;right:10px}
+  .screenframe{background:#10141a;border:1px solid #06080b;border-radius:6px;padding:10px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.8), 0 0 34px var(--glow)}
+  canvas{display:block;width:100%;image-rendering:pixelated;background:var(--oled)}
+  canvas.screen{aspect-ratio:4/1}
+  .cap{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:10px;max-width:70ch}
+  .cap b{color:var(--ink)}
+
+  .divider{display:block;margin:0;border-radius:4px;opacity:.85}
+
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th{color:var(--muted);font-weight:600;text-align:left;font-size:10px;text-transform:uppercase;
+    letter-spacing:.14em;padding:8px 12px;border-bottom:1px solid #2c333c}
+  td{padding:8px 12px;border-bottom:1px solid #1d2229;vertical-align:top;line-height:1.6;color:var(--muted)}
+  td:first-child{color:#e8eef5;font-weight:700;white-space:nowrap}
+  td:nth-child(2){color:var(--accent);white-space:nowrap}
+  .tablewrap{overflow-x:auto}
+  .wide td:nth-child(2){white-space:normal}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{border:1px solid var(--panel-edge);border-radius:10px;background:#161a1f;padding:16px 18px}
+  .card h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .card p{margin:0;font-size:12px}
+  .card .set{display:block;margin-top:10px;padding-top:10px;border-top:1px dashed #2c333c;
+    font-size:11px;color:#a9b4c0;line-height:1.8}
+  .card .set b{color:var(--accent);font-weight:600}
+
+  .note{border:1px solid var(--panel-edge);border-left:3px solid var(--accent);border-radius:8px;
+    background:#161a1f;padding:12px 16px;font-size:12px;color:var(--muted);line-height:1.7;max-width:none}
+  .note b{color:var(--ink)}
+
+  .qa dt{font-size:12.5px;color:#e8eef5;font-weight:700;margin-top:14px}
+  .qa dt:first-child{margin-top:0}
+  .qa dd{margin:4px 0 0;font-size:12.5px;line-height:1.7;color:var(--muted)}
+
+  .speclist{list-style:none;padding:0}
+  .speclist li{display:flex;gap:10px}
+  .speclist li::before{content:"~";color:var(--accent)}
+
+  footer{border-top:1px solid #1d2229;padding-top:22px;text-align:center}
+  footer p{max-width:none;margin:0 0 6px}
+  .fin{color:var(--accent);letter-spacing:.3em;font-size:10px;text-transform:uppercase}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Ormer Modular · made in Guernsey</div>
+    <h1>SHOAL <span style="color:var(--muted);font-size:16px">for VCV Rack</span></h1>
+    <p class="vstamp">USER MANUAL · v2.0.6</p>
+    <p class="lede">Shoal plays melodies you didn't write - but that always sound like you
+    meant them. Eight tracks each generate a looping melody from a <b>seed</b>; every note is
+    locked to one global <b>scale</b>; tracks can <b>follow</b> one another like fish. The name:
+    eight fish, moving as one. A reseed is the shoal turning.</p>
+    <nav class="toc">
+      <a href="#install">Installing</a><a href="#quick">Quick start</a><a href="#ideas">The big ideas</a>
+      <a href="#slow">The slow arts</a><a href="#panelref">The panel</a>
+      <a href="#screen">The display</a><a href="#menu">Right-click menu</a>
+      <a href="#expanders">The expanders</a>
+      <a href="#recipes">Recipes</a><a href="#trouble">Troubleshooting</a><a href="#specs">Specifications</a>
+    </nav>
+  </header>
+
+  <section class="panel">
+    <span class="screw tl"></span><span class="screw tr"></span>
+    <span class="screw bl"></span><span class="screw br"></span>
+    <div class="screenframe"><canvas id="hero" class="screen" width="256" height="64"></canvas></div>
+    <p class="cap">The tank: eight track lanes with the selected track's detail down the
+    right-hand side - the same screen as the hardware original, drawn live on the module.
+    Everything in this manual is visible here or one right-click away.</p>
+  </section>
+
+  <section id="install">
+    <h2>Installing</h2>
+    <p>Shoal is available from the <b>VCV Library</b>:</p>
+    <ol>
+      <li>Buy Shoal on its page in the <a href="https://library.vcvrack.com/OrmerModular/Shoal">VCV
+        Library</a>, logged in to your VCV account.</li>
+      <li>In Rack, open the <b>Library</b> menu (log in there if you aren't already)
+        and let it update - Shoal downloads with your other plugins.</li>
+      <li>Restart Rack if it asks. Three modules appear in the module browser under
+        <b>Ormer Modular</b>: <b>Shoal</b> itself, and its two optional expanders,
+        <b>Shoal Expander</b> and <b>Shoal Outs</b>.</li>
+    </ol>
+    <p>Updates arrive the same way, through Rack's Library menu.</p>
+    <div class="note"><b>Also swims in hardware:</b> Shoal began on the Expert Sleepers
+    disting NT, where it is free - same engine, same seeds, same melodies.
+    <a href="https://ormermodular.github.io/shoal/nt/">The hardware manual lives here.</a></div>
+  </section>
+
+  <section id="quick">
+    <h2>Five minutes to a first melody</h2>
+    <ol>
+      <li><b>Add Shoal.</b> It's already ticking: the internal clock defaults to 120 BPM,
+        and ×1 means one step per beat.</li>
+      <li><b>Patch track 1.</b> GATE 1 → an envelope or VCA, PITCH 1 → an oscillator's
+        1V/oct input. Each track has its own pair of jacks along the bottom.</li>
+      <li><b>Pick a key.</b> Right-click → <i>Scale</i> and <i>Root note</i>. Try Minor
+        pentatonic to start - it always sounds good.</li>
+      <li><b>You should already hear a melody</b> - every seed carries a base line spanning
+        two octaves centred on the root. The bipolar <b>NOTE</b> and <b>OCTAVE</b> knobs add
+        random variation on top when you want it wilder (up for upward straying, down for
+        downward); return them to centre to come home to the base melody.</li>
+      <li><b>Reseed until you like it.</b> Tap <b>RSED</b>. Each tap rolls a new melody for
+        the selected track, landing at the top of its next loop (the button glows while the
+        reseed is waiting). <i>Reseed all</i> lives in the right-click menu and on the
+        RESEED jack.</li>
+      <li><b>Bring in more fish.</b> Patch further tracks' jacks when you're ready - build
+        the shoal one voice at a time, deliberately.</li>
+      <li><b>To sync to your rack</b>, patch a clock into <b>CLK IN</b>. A cable in that
+        jack <i>is</i> external mode - Shoal follows it immediately, one pulse per ×1 step,
+        and returns to its internal clock when you unpatch.</li>
+    </ol>
+    <p>That's the whole game. Everything else is refinement.</p>
+  </section>
+
+  <canvas class="divider" data-i="0" width="256" height="16"></canvas>
+
+  <section id="ideas">
+    <h2>The big ideas</h2>
+
+    <h3>Seeds: randomness that repeats</h3>
+    <p><b>The seed is the melody.</b> A track's melody is completely determined by its
+    <b>Seed</b> (a number, 0–999) - think of it as a recipe number, not a random amount.
+    Same seed = same melody, every loop, every restart, every patch reload. Reseeding just
+    picks a new number. Because the seed is an ordinary parameter, your patches and presets
+    capture your exact patterns - and the SEED CV input can address it for pattern-switching
+    madness.</p>
+
+    <h3>Reseeds land on the grid</h3>
+    <p>A reseed never interrupts mid-loop. It <b>arms</b> (the RSED button glows, the fish
+    swims faster) and takes effect when the track wraps to step 1. Music stays on the rails;
+    new sections start where sections should.</p>
+
+    <h3>Chance shapes the rhythm</h3>
+    <p><b>CHANCE</b> - does this step play a note at all? 100% = every step, 50% = half
+    rests. Seeded, so the same steps rest on every loop until you reseed.</p>
+
+    <h3>The base melody, and non-destructive variation</h3>
+    <p>Every seed produces a <b>base melody</b> - a line spanning two octaves of the scale,
+    centred on the root, so melodies orbit their home note. That melody exists on its own:
+    with NOTE and OCTAVE at centre (the defaults), it's exactly what you hear.</p>
+    <ul>
+      <li><b>NOTE</b> (−100%…+100%) - random variation applied to the notes. The distance
+        from centre sets both how <i>often</i> a note is varied and how <i>far</i> it may
+        stray (up to 12 scale steps at full); the direction of the knob sets the direction
+        of the stray.</li>
+      <li><b>OCTAVE</b> (−100%…+100%) - the same idea with whole-octave leaps (up to 5
+        octaves at full).</li>
+    </ul>
+    <p>Turn them up for wildness, and back to centre to return to the pure base melody -
+    <b>nothing is ever destroyed</b>. Notes are <i>built from</i> the scale, so nothing is
+    ever out of key.</p>
+
+    <h3>Tracks can follow each other</h3>
+    <p>Set a track's <b>Follow</b> (right-click menu) to another track and it mirrors that
+    track's material - same musical contour - filtered through its <b>own</b> settings: its
+    own chance, note/octave amounts, octave, rate, length, gate. Reseed the source and the
+    follower changes with it. Set it back to <code>Off</code> to unlink (the track's own
+    seed is untouched underneath).</p>
+
+    <h3>Direction: the same melody, walked differently</h3>
+    <p>Because a track's melody is derived from its seed, <b>Direction</b> doesn't change
+    the notes - it changes the <i>walk</i>. Reverse plays your exact melody backwards;
+    Pendulum and Pong fold it into palindromes (ends played twice or once respectively);
+    Drunk staggers through it (50% forward, 25% repeat, 25% back); Random abandons order
+    entirely. Random, Drunk, Pools and Skitter are truly unpredictable - the others loop
+    identically, and flipping back to Forwards always recovers the original line.
+    There are fifteen walks in all; three of the most generative:</p>
+    <div class="cards">
+      <div class="card"><h4>Tide</h4>
+        <p>The rhythm holds steady while the <b>melody</b> drifts one step through it on
+        every pass, realigning after <i>length</i> passes. Watch the lane: the pattern
+        slides left each time the loop wraps. Fully deterministic - and it phases against
+        a follower playing the un-shifted original.</p></div>
+      <div class="card"><h4>Shuffle</h4>
+        <p>Every step plays exactly once per pass, in a freshly dealt order each pass.
+        Unlike Random, nothing repeats and nothing is skipped: the same notes, their story
+        retold every loop. The deals are seeded, so even the shuffles are reproducible.</p></div>
+      <div class="card"><h4>Pools</h4>
+        <p>The playhead circles a small pocket of 3–4 adjacent steps for a few laps, then
+        hops to another pocket. Motifs repeat, mutate position, move on - the closest a
+        sequencer gets to sounding like it's thinking about a phrase. (Truly random,
+        like Drunk.)</p></div>
+    </div>
+    <p style="margin-top:10px">And six more:</p>
+    <ul>
+      <li><b>Stride</b> (Hopscotch) - an overlapping "two ahead, one back" crawl: step 1,
+        step 3, step 2, step 4, step 3, step 5… Each step plays twice across a full cycle,
+        which takes twice the pattern's Length. Fixed and deterministic.</li>
+      <li><b>Gravity</b> - mostly walks forward, but has a seed-derived chance each step of
+        snapping back to step 1 - an orbiting, homing pull. What Weight does to pitch,
+        applied to the walk itself.</li>
+      <li><b>Converge</b> - folds the pattern in on itself: step 1, the last step, step 2,
+        the second-to-last, and so on, meeting in the middle.</li>
+      <li><b>Diverge</b> - the mirror of Converge: starts near the middle and alternates
+        outward, arriving at step 1 and the last step last.</li>
+      <li><b>Skitter</b> - like Random, but never plays the same step twice in a row.
+        Unpredictable without Random's stutter.</li>
+      <li><b>Anchor</b> - alternates step 1 with each other step in turn: step 1, step 2,
+        step 1, step 3, step 1, step 4… A drone note punctuated by melodic excursions,
+        always returning home. Fixed, unlike Gravity's seed-derived pull.</li>
+    </ul>
+    <p>Armed reseeds land at the mode's loop origin: step 1 (including Stride, Gravity,
+    Converge and Anchor); the last step in Reverse; the pass boundary in Tide/Shuffle;
+    the middle step in Diverge, where its cycle begins; immediately in
+    Random/Drunk/Pools/Skitter.</p>
+
+    <h3>Polymetre and rate</h3>
+    <p>Each track has its own <b>Length</b> (1–64 steps) and <b>RATE</b> (/64 … ×64 of the
+    master clock, 29 rates in ascending order). The dial runs <code>/64 /32 /16 /8 /7 /6
+    /5.3 /5 /4 /3 /2.6 /2 /1.5 ×1 ×1.25 ×1.3 ×1.5 ×2 ×2.6 ×3 ×4 ×5 ×5.3 ×6 ×7 ×8 ×16 ×32
+    ×64</code> - the odd ratios (3, 5, 7, plus 6) sit right next to the even ones, so a
+    track at ×3 or /5 pushes against the grid while the rest of the shoal holds it, and
+    the fractional ones land <i>between</i> the grid for polyrhythms proper: ×1.5 is a true
+    3-over-2, ×1.25 the classic 5-against-4. Fractional rates are exact - their advances
+    are spread as evenly as possible, so they never drift. Divided rates land on the
+    downbeat: a /4 track steps with every fourth clock, starting on the first. A 16-step track over a 5-step track at /2 makes phrases that don't repeat for a
+    long time; a 33-step track over anything makes phrases that <i>never</i> seem to. This
+    is where the "generative" feeling really comes from.</p>
+  </section>
+
+  <section id="slow">
+    <h2>The slow arts</h2>
+    <p>Four controls made for long-form and ambient playing:</p>
+    <div class="cards">
+      <div class="card"><h4>Evolve · per track</h4>
+        <p>Each pass, that share of steps quietly re-roll themselves, pitch and rhythm
+        alike. At 5%, a melody becomes a different melody over ten minutes without your
+        hands. Seeded, so the evolution path is repeatable; reseeding starts a fresh
+        lineage. Followers evolve with their source.</p></div>
+      <div class="card"><h4>Breathe · per track</h4>
+        <p>The chance that an entire pass rests. Steps rest with Chance; <b>phrases</b>
+        rest with Breathe. The track's lane dims on the display while it sits out, and
+        re-enters on its next pass.</p></div>
+      <div class="card"><h4>Freeze · FRZE + gate input</h4>
+        <p>The shoal holds its breath: nothing advances and every running track's current
+        note is held, hanging as a chord until you release. Freeze <b>blooms</b>: engaging
+        it raises every gate immediately - including tracks between notes - so the full
+        chord always sounds the instant you freeze. A slow gate into FREEZE makes oceanic
+        swells. By default the clock output keeps running through a freeze; set
+        <i>Frozen clock out</i> to <code>Stops</code> to hold the whole patch's breath.</p></div>
+      <div class="card"><h4>Weight · global</h4>
+        <p>Consonance gravity: that share of notes snap to the scale's root, third or
+        fifth. High weight turns wild settings lush instead of angular.</p></div>
+    </div>
+  </section>
+
+  <canvas class="divider" data-i="1" width="256" height="16"></canvas>
+
+  <section id="panelref">
+    <h2>The panel</h2>
+    <p>Shoal works on a <b>selected-track</b> basis: the TRACK buttons under the display
+    choose which track the knobs and buttons address, and the knobs snap to show that
+    track's values when you switch. Every control is a real Rack parameter, so
+    MIDI-mapping and preset saving work as usual.</p>
+
+    <h3>Big knobs - the performance trio</h3>
+    <div class="tablewrap"><table>
+      <tr><th>Knob</th><th>Range</th><th>What it does</th></tr>
+      <tr><td>CHANCE</td><td>0–100%</td><td>Probability a step plays a note</td></tr>
+      <tr><td>NOTE</td><td>±100%</td><td>Random note variation: distance from centre = how often and how far, direction = up or down</td></tr>
+      <tr><td>OCTAVE</td><td>±100%</td><td>Random octave leaps, same principle</td></tr>
+    </table></div>
+
+    <h3>Small knobs</h3>
+    <div class="tablewrap"><table>
+      <tr><th>Knob</th><th>Range</th><th>What it does</th></tr>
+      <tr><td>LENG</td><td>1–64</td><td>Steps in this track's loop</td></tr>
+      <tr><td>RATE</td><td>/64…×64</td><td>Speed relative to the master clock (×1 = one step per beat), 29 rates</td></tr>
+      <tr><td>DIRN</td><td>15 modes</td><td>The walk (see Directions above)</td></tr>
+      <tr><td>TRNS</td><td>−7…+7</td><td>Fixed shift in scale degrees - always in key. +2 on a follower = parallel thirds</td></tr>
+      <tr><td>SHFT</td><td>−63…+63</td><td>Rotate the whole pattern - notes, gates, their timing - non-destructively (0 returns the original). On a follower, this is a canon</td></tr>
+      <tr><td>OCTA</td><td>−3…+3</td><td>Fixed octave shift for the whole track</td></tr>
+    </table></div>
+    <p style="margin-top:8px"><i>OCTAVE the big knob adds random octave leaps; OCTA the
+    small knob transposes the whole track by fixed octaves.</i></p>
+
+    <h3>Buttons</h3>
+    <div class="tablewrap"><table class="wide">
+      <tr><th>Button</th><th>Acts on</th><th>What it does</th></tr>
+      <tr><td>FRZE</td><td>global, latching</td><td>Hold every sounding note as a chord; nothing advances. Glows while frozen, including CV-driven freezes</td></tr>
+      <tr><td>MUTE</td><td>selected track</td><td>Silence the track's gate; the pattern keeps running, and unmuting drops back in on the grid. Pitch CV holds its last note, so a gate-less voice (drone, self-oscillating filter) sustains rather than going quiet</td></tr>
+      <tr><td>SOLO</td><td>selected track</td><td>Mute everyone else. Solo another track to move it; press again to clear</td></tr>
+      <tr><td>RUN</td><td>global, latching</td><td>Master play/pause</td></tr>
+      <tr><td>RSET</td><td>global</td><td>All tracks restart at step 1 on the next tick</td></tr>
+      <tr><td>RSED</td><td>selected track</td><td>Reseed: rolls a fresh random seed, armed, landing at the loop origin. Glows while armed</td></tr>
+    </table></div>
+
+    <h3>Jacks</h3>
+    <div class="tablewrap"><table class="wide">
+      <tr><th>Jack</th><th>Direction</th><th>What it does</th></tr>
+      <tr><td>GATE 1–8</td><td>out</td><td>The track's gate. High level per track (1–10V, default 10V, set in the menu). GATE 2/4/6/8 also carry poly channels if <i>Poly output routing</i> is set</td></tr>
+      <tr><td>PITCH 1–8</td><td>out</td><td>The track's pitch CV, 1V/oct, 0V = C3. Per-track scale and offset in the menu. PITCH 2/4/6/8 also carry poly channels if <i>Poly output routing</i> is set</td></tr>
+      <tr><td>CLK OUT</td><td>out</td><td>Shoal's master clock: 10V pulses at the ×1 step rate, 50% duty. Follows Run; during Freeze see <i>Frozen clock out</i></td></tr>
+      <tr><td>CLK IN</td><td>in</td><td>External clock. <b>A cable here is external mode</b> - one pulse advances ×1 tracks one step; unpatch to return to the internal clock</td></tr>
+      <tr><td>RST IN</td><td>in</td><td>Rising edge: all tracks restart at step 1 on the next tick</td></tr>
+      <tr><td>RESEED</td><td>in</td><td>Rising edge: reseed <i>everything</i> - a fresh random base, armed, each track landing at its own loop origin. Built for triggers</td></tr>
+      <tr><td>FREEZE</td><td>in</td><td>Gate: freeze while high, OR-ed with the FRZE button</td></tr>
+      <tr><td>SEED</td><td>in</td><td>CV addresses the <b>selected track's</b> seed: 0–10V maps to 0–999. Change the voltage and the track reseeds to that exact number (armed, on the grid)</td></tr>
+    </table></div>
+  </section>
+
+  <section id="screen">
+    <h2>The display</h2>
+    <ul>
+      <li><b>8 lanes</b> = 8 tracks: bar height suggests pitch, a flat tick is a rest, the
+        bright column is the play position.</li>
+      <li><b>Longer loops draw denser</b> - the whole pattern is always visible, never
+        scrolled.</li>
+      <li>The flag beside a lane: <code>S</code> = solo, <code>M</code> = muted,
+        <code>‹n</code> = following track <i>n</i>. A lane drawn dim (without
+        <code>M</code>) is <b>breathing</b> - resting this pass.</li>
+      <li>Right panel = the selected track's live state: seed, direction, rate, length and
+        friends - jot down the keepers.</li>
+      <li><b>Amber means CV.</b> When a Shoal Expander is modulating a track, that lane's
+        number burns amber, and any value in the right panel the CV is moving shows amber
+        at its modulated value. The panel knobs stay put - they show what you set, the
+        display shows what's playing.</li>
+      <li>Bottom right: the key (root and scale), <code>RESEED ARM</code> blinking while
+        the selected track's reseed waits, <code>FRZ</code> while frozen.</li>
+      <li>The fish is decorative. Mostly. It swims faster when a reseed is armed.</li>
+    </ul>
+    <h3>The screensaver: the shoal at rest</h3>
+    <p>Leave the controls alone (five minutes by default; Off / 1 min / 5 min in the
+    right-click menu) and the display dissolves into open water: <b>eight fish, one per
+    track, swimming the screen</b>. Each fish darts forward whenever its track sounds a
+    note, so the scene <i>is</i> your patch - busy tracks race, sparse tracks glide,
+    muted tracks drift dim and slow, a breathing track fades while it rests. Freeze
+    stills the whole shoal mid-water (the bubbles keep rising; the sea stays alive).</p>
+    <p>Touch any of the module's controls and the normal display returns - the waking
+    touch is swallowed, so you can't reseed a track just by waking the screen. CV
+    arriving at SEED, RESEED or FREEZE deliberately doesn't wake it: a generative patch
+    can fall asleep and be watched.</p>
+  </section>
+
+  <canvas class="divider" data-i="2" width="256" height="16"></canvas>
+
+  <section id="menu">
+    <h2>The right-click menu</h2>
+    <p>The long tail of settings lives in the context menu, addressed to the selected
+    track (the menu is headed with its number). Anything with its own panel control stays
+    on the panel. Everything - knobs, menu settings, mute/solo, seeds - is saved in your
+    patch and in module presets, and restores exactly.</p>
+    <p><b>Typing exact values:</b> click a slider without dragging, or right-click it, and
+    it becomes a text box. Type the value and press <b>Enter</b> to apply (the menu stays
+    open), or <b>Escape</b> to leave it unchanged.</p>
+
+    <h3>Track section</h3>
+    <div class="tablewrap"><table class="wide">
+      <tr><th>Item</th><th>Range</th><th>What it does</th></tr>
+      <tr><td>Evolve</td><td>0–100%</td><td>Share of steps that re-roll themselves each pass</td></tr>
+      <tr><td>Breathe</td><td>0–100%</td><td>Chance a whole pass rests</td></tr>
+      <tr><td>Gate length</td><td>5–100%</td><td>Gate time as a share of the step</td></tr>
+      <tr><td>Tie</td><td>0–100%</td><td>Chance a note slurs into the next (no retrigger)</td></tr>
+      <tr><td>Slop</td><td>0–100%</td><td>Humanised timing: seeded per-note delay, up to half a step</td></tr>
+      <tr><td>Gate level</td><td>1–10V</td><td>The gate's high voltage (default 10V)</td></tr>
+      <tr><td>Pitch scale</td><td>5–200%</td><td>Scales the pitch CV around 100% = 1V/oct</td></tr>
+      <tr><td>Pitch offset</td><td>−10…+10V</td><td>Fixed voltage added after the scale, in 0.1V steps</td></tr>
+      <tr><td>Follow (share seed of)</td><td>Off / Track 1–8</td><td>Follow another track's material</td></tr>
+      <tr><td>Seed</td><td>0–999</td><td>The pattern. Drag it to audition seeds directly</td></tr>
+    </table></div>
+
+    <h3>Global section</h3>
+    <div class="tablewrap"><table class="wide">
+      <tr><th>Item</th><th>Range</th><th>What it does</th></tr>
+      <tr><td>Scale</td><td>13 scales</td><td>The key everything plays in</td></tr>
+      <tr><td>Root note</td><td>C…B</td><td>The tonal centre</td></tr>
+      <tr><td>Weight</td><td>0–100%</td><td>Consonance gravity: % of notes snapped to root/3rd/5th</td></tr>
+      <tr><td>BPM</td><td>20–300</td><td>Internal clock speed in whole BPM (ignored while a cable is in CLK IN, but remembered)</td></tr>
+      <tr><td>Panel</td><td>Follow Rack setting / Silver / Black</td><td>The module's finish. The default follows Rack's dark-panels preference; the choice saves per instance</td></tr>
+      <tr><td>Screensaver</td><td>Off / 1 min / 5 min</td><td>Idle animation: the shoal swims the screen, one fish per track (default: after 5 minutes)</td></tr>
+      <tr><td>Frozen clock out</td><td>Stops / Runs</td><td>What CLK OUT does during a Freeze. <code>Runs</code> (default) keeps the grid going so the patch stays in time; <code>Stops</code> holds the whole patch's breath at once</td></tr>
+      <tr><td>Poly output routing</td><td>Off / Pairs / Split 4+4 / All 8</td><td>Bundles tracks onto fewer poly cables. The default, Off, is unchanged: 8 independent mono pairs</td></tr>
+      <tr><td>Currents range (Shoal Outs)</td><td>0–10V / ±5V</td><td>The voltage range of the Currents outputs on Shoal Outs. <code>0–10V</code> (default) matches the hardware; <code>±5V</code> suits bipolar destinations</td></tr>
+      <tr><td>Reseed all</td><td>action</td><td>Re-rolls every track (armed, on the grid)</td></tr>
+    </table></div>
+
+
+    <div class="note" style="margin-top:14px"><b>Poly output routing:</b> every mode groups tracks and
+    lands that group's poly cable on the last jack in the group. <code>Pairs</code> groups two at a
+    time: PITCH/GATE 2 carries tracks 1–2, PITCH/GATE 4 carries tracks 3–4, and so on through 6 and 8,
+    each a 2-channel poly cable. <code>Split 4+4</code> groups four at a time: PITCH/GATE 4 carries
+    tracks 1–4, PITCH/GATE 8 carries tracks 5–8, each 4-channel. <code>All 8</code> is one group of
+    eight: PITCH/GATE 8 carries every track as an 8-channel poly cable. In every mode the individual
+    mono jacks keep working exactly as before - poly mode only adds channels to each group's hub jack,
+    it never takes a working cable away.</div>
+
+    <div class="note" style="margin-top:14px"><b>Hearing Gate length &amp; Tie:</b> these
+    shape gate <i>duration</i>, so they're only audible on voices that follow it - an
+    envelope with sustain (ADSR → VCA) is the classic test rig. Strike-based voices
+    (plucks, drums, LPG pings) respond to the gate's <i>edge</i> only and will ignore
+    both. For singing ties, add slew on the pitch line: tied notes become slides.</div>
+
+    <h3 style="margin-top:22px">Adding the expanders</h3>
+    <p>The last two items, <i>Add Shoal Expander</i> and <i>Add Shoal Outs</i>, place an
+    expander tight against Shoal - the Expander on the left and Outs on the right, so
+    signals flow left to right - moving neighbouring modules along to make room. If that
+    side is already taken by the other expander, the new one goes on the free side.
+    <i>Add Shoal Outs</i> is greyed out while one is already attached.</p>
+  </section>
+
+  <section id="expanders">
+    <h2>The expanders</h2>
+    <p>Two optional 4HP companions, included with Shoal. Each works on <b>either side</b>
+    of Shoal, as long as it sits directly against it (or, for Expanders, against a chain
+    leading to it) in the same row. A green light at the top of each shows it's
+    connected. The conventional layout is inputs on the left, outputs on the right:
+    Expander, then Shoal, then Outs.</p>
+
+    <h3>Shoal Expander: CV in</h3>
+    <p>Twelve CV inputs for the performance controls.</p>
+    <ul>
+      <li><b>TRACK knob</b> - chooses which track the ten per-track inputs address. This is
+        independent of Shoal's own track selection, so you can browse tracks on the panel
+        without re-routing live modulation.</li>
+      <li><b>Per-track inputs</b> - CHANCE, NOTE, OCTAVE, EVOLVE, BREATHE, SLOP, TRNS,
+        SHFT, OCTA and GATE length.</li>
+      <li><b>Global inputs</b> - WEIGHT and ROOT.</li>
+    </ul>
+    <p><b>CV adds to the knob.</b> Each input adds to that setting's current value and is
+    clamped to its range - the knob is the centre, the CV moves around it. Unipolar
+    settings (0–100%, like CHANCE or EVOLVE) take 0–10V for the full range; bipolar ones
+    (NOTE, OCTAVE, TRNS, SHFT, OCTA) take ±5V. The one exception is <b>ROOT</b>, which is
+    a 12-way choice rather than a range: it sets the root outright from 1V/oct, 0V = C,
+    so a keyboard or quantised sequence changes key directly.</p>
+    <p>Modulation never moves Shoal's knobs and is never saved into your patch - saving
+    mid-sweep stores the values you set. The display shows it instead, in amber.</p>
+    <p><b>Chaining:</b> add more Expanders beside the first, working outward from Shoal
+    (up to eight in all, on one side or split across both - the menu's <i>Add another
+    Shoal Expander</i> grows the chain for you), each on its own TRACK. Several can
+    address the same track; their CV adds up. WEIGHT inputs add up across the chain; for
+    ROOT, the patched Expander nearest Shoal wins.</p>
+
+    <h3>Shoal Outs: Currents and end-of-sequence</h3>
+    <p>Sixteen outputs, one row per track: <b>Current</b> on the left, <b>EOS</b> on the
+    right. One Shoal Outs carries all eight tracks.</p>
+    <div class="cards">
+      <div class="card"><h4>Currents</h4>
+        <p>A slow, smooth, seeded drift CV per track - the water the melody swims in. For
+        filter cutoffs, VCA levels, send amounts: gentle ambient movement without a
+        separate LFO. It comes from the track's own seed, so it repeats with every pass
+        and returns with the seed. A new target lands each time the track advances,
+        whether or not the step sounds, and the voltage eases towards it over the step,
+        never jumping - so it moves at the track's own rate. A follower's Current is its
+        own, not its source's. Currents hold through a Freeze. 0–10V by default, or ±5V
+        via Shoal's <i>Currents range</i> menu item.</p></div>
+      <div class="card"><h4>End-of-sequence</h4>
+        <p>A 10V pulse, half a step long, every time the track completes a full cycle of
+        its Length. Use it to advance another sequencer, ping an envelope once per phrase,
+        or reseed the shoal. It counts <i>advances</i>, so every direction gets a steady
+        once-per-Length pulse - even Random, Drunk, Pools and Skitter, which have no fixed
+        loop of their own. It ignores Chance and Mute (it marks the structure, not which
+        notes sound) and stays silent through a Freeze.</p></div>
+    </div>
+  </section>
+
+  <section id="recipes">
+    <h2>Recipes</h2>
+    <div class="cards">
+      <div class="card"><h4>A bass line that follows your melody</h4>
+        <p>Track 1: your melody. Select track 2 and set it to follow.</p>
+        <span class="set"><b>Follow</b> Track 1 · <b>OCTA</b> −2 · <b>RATE</b> /4 ·
+        <b>CHANCE</b> ≈50% · <b>Gate length</b> ≈80%</span></div>
+      <div class="card"><h4>Parallel harmony</h4>
+        <p>The same melody harmonises itself, in key, through every reseed. Thin it with
+        CHANCE so the harmony only appears on some notes.</p>
+        <span class="set"><b>Follow</b> Track 1 · same <b>RATE</b>/<b>LENG</b> ·
+        <b>TRNS</b> +2 (thirds) or +4</span></div>
+      <div class="card"><h4>A true canon</h4>
+        <p>The same melody enters four steps behind its leader, an octave down - a round
+        that survives every reseed. Shift the follower, never the leader.</p>
+        <span class="set"><b>Follow</b> Track 1 · same <b>RATE</b>/<b>LENG</b> ·
+        <b>SHFT</b> −4 · <b>OCTA</b> −1</span></div>
+      <div class="card"><h4>Shoal as the master clock</h4>
+        <p>Patch CLK OUT to drums, clocked LFOs and synced delays - everything rides
+        Shoal's grid in either clock mode. During a Freeze the pulse keeps running by
+        default, so delay tails stay in time while the melody hangs.</p></div>
+      <div class="card"><h4>Evolving ambient</h4>
+        <p>Two or three tracks at odd lengths, slow rates, low chance, slow-attack voices.
+        Then don't touch anything for twenty minutes - Evolve/Breathe compose, Weight
+        keeps it lush. A slow LFO into FREEZE swells chords out of whatever is playing.</p>
+        <span class="set">lengths 16/11/7 · rates /2, /4 · <b>CHANCE</b> 30–50% ·
+        <b>Breathe</b> 20% · <b>Evolve</b> 5–10% · <b>Tie</b> 30% · <b>Slop</b> 10% ·
+        <b>Weight</b> 60% · In-Sen scale</span></div>
+      <div class="card"><h4>Sequence the sequencer</h4>
+        <p>A step sequencer into SEED switches the selected track between melodies you've
+        chosen, each landing neatly at the loop start. 0–10V maps to seeds 0–999, about
+        10mV per seed - quantised sources work better than drifting ones.</p></div>
+      <div class="card"><h4>Live key changes</h4>
+        <p>MIDI-map <i>Root note</i> (or <i>Scale</i>). Each track adopts the new key on
+        its next note, cascading over a beat or two.</p></div>
+      <div class="card"><h4>A human drummer's hi-hat line</h4>
+        <p>Take just the gate output. The seeded rests and drift make a repeating, groovy
+        pattern.</p>
+        <span class="set"><b>CHANCE</b> 65% · <b>NOTE</b>/<b>OCTAVE</b> centred ·
+        <b>Gate length</b> 10% · <b>Slop</b> 15% · <b>RATE</b> ×8</span></div>
+      <div class="card"><h4>A new section every phrase</h4>
+        <p>With Shoal Outs attached, patch one track's EOS into Shoal's own RESEED input.
+        Every time that track completes its loop, the whole shoal turns.</p>
+        <span class="set">EOS 8 → <b>RESEED</b> · track 8 <b>LENG</b> 64 for a new
+        section every 64 steps</span></div>
+      <div class="card"><h4>Water for the filters</h4>
+        <p>Patch each voice's Current into its filter cutoff. Every track breathes at its
+        own pace, and the movement comes back with the seed.</p>
+        <span class="set">Shoal Outs <b>CUR</b> 1–8 → cutoffs · slow <b>RATE</b>s for
+        long swells</span></div>
+      <div class="card"><h4>Hands-free dynamics</h4>
+        <p>A slow LFO into a Shoal Expander's CHANCE thins a track out and fills it back
+        in; another into NOTE makes it wander further on the peaks.</p>
+        <span class="set">Expander <b>TRACK</b> 1 · LFO (0–10V) → <b>CHANCE</b> with the
+        CHANCE knob at 0</span></div>
+      <div class="card"><h4>Fitting other voltage standards</h4>
+        <p>Per-track <i>Gate level</i>, <i>Pitch scale</i> and <i>Pitch offset</i> remove
+        the need for external attenuators: 5V gates for picky envelopes, 120% for 1.2V/oct
+        gear, or compress the melody into a narrow window for video synthesis.</p></div>
+    </div>
+  </section>
+
+  <section id="trouble">
+    <h2>Troubleshooting</h2>
+    <dl class="qa">
+      <dt>Nothing is moving on the display.</dt>
+      <dd>RUN is off, or there's a cable in CLK IN but no clock arriving - a patched clock
+      input silences the internal clock entirely.</dd>
+      <dt>It's running but silent.</dt>
+      <dd>CHANCE at 0? MUTE lit? Another track solo'd (<code>S</code> on its lane)?
+      Patched from the right track's jacks?</dd>
+      <dt>Notes seem out of time.</dt>
+      <dd>That's probably <i>Slop</i> - set it to 0 for machine timing.</dd>
+      <dt>The melody won't get wilder.</dt>
+      <dd>NOTE and OCTAVE are at (or near) centre - they're bipolar, and the centre is zero
+      variation. Turn away from centre in either direction.</dd>
+      <dt>The knobs jumped when I pressed a TRACK button.</dt>
+      <dd>By design: the knobs always show the selected track's real values, so switching
+      tracks moves them. Every track remembers its own settings.</dd>
+      <dt>An expander does nothing, and its light is off.</dt>
+      <dd>It isn't touching Shoal. Either expander can go on either side, but it must sit
+      directly against Shoal in the same row (an Expander can also sit at the end of an
+      unbroken chain of Expanders). The two types can't share a side, since only one
+      module fits directly against Shoal there. The menu's <i>Add</i> items place them
+      correctly.</dd>
+      <dt>Expander CV is patched but the knobs don't move.</dt>
+      <dd>By design - CV adds on top without moving the knobs. Watch the display: the
+      modulated values show in amber. Also check the Expander's TRACK knob is on the
+      track you expect.</dd>
+      <dt>My oscillator plays in a different octave than expected.</dt>
+      <dd>Shoal's 0V = C3, matching the hardware original. Tune your oscillator to taste,
+      or use <i>Pitch offset</i> (+1V = up an octave).</dd>
+    </dl>
+  </section>
+
+  <section id="specs">
+    <h2>Specifications</h2>
+    <ul class="speclist">
+      <li>8 tracks, polymetric: per-track length 1–64, 29 rates from /64 to ×64 (odd and fractional ratios included), 15 play directions</li>
+      <li>Pitch outputs: 1V/oct, 0V = C3 (MIDI note 48), folded to stay in key at the extremes; per-track scale (5–200%) and offset (±10V)</li>
+      <li>Gate outputs: 0V low; high level per track 1–10V, default 10V</li>
+      <li>Clock, reset, reseed inputs: rising edge above ~1V; Freeze is level-sensitive (a gate)</li>
+      <li>Seed input: 0–10V maps to seed 0–999 for the selected track</li>
+      <li>Clock output: 0/10V pulses at the ×1 step rate, 50% duty</li>
+      <li>Internal clock 20–300 BPM; external clock via CLK IN (cable presence switches mode)</li>
+      <li>Engine identical to the disting NT version - same seeds produce the same melodies on both</li>
+      <li>Width: 24HP</li>
+      <li>Shoal Expander (4HP): 10 per-track CV inputs addressing its chosen track, plus global Weight and Root; additive, 0–10V unipolar / ±5V bipolar; Root 1V/oct absolute; either side of Shoal, chains up to 8</li>
+      <li>Shoal Outs (4HP): per track, a Current (0–10V or ±5V) and an end-of-sequence output (10V, half a step long); either side of Shoal</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p class="fin">Ormer Modular</p>
+    <p>Shoal is named for the ormer, the Guernsey shellfish the sea only reveals on the
+    lowest tides of the year.</p>
+    <p>Happy swimming. 🐟</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // ---- 3x5 pixel font (matches the module's tiny font) ----
+  var F={
+   '0':['111','101','101','101','111'],'1':['010','110','010','010','111'],
+   '2':['111','001','111','100','111'],'3':['111','001','011','001','111'],
+   '4':['101','101','111','001','001'],'5':['111','100','111','001','111'],
+   '6':['111','100','111','101','111'],'7':['111','001','010','010','010'],
+   '8':['111','101','111','101','111'],'9':['111','101','111','001','111'],
+   'A':['010','101','111','101','101'],'B':['110','101','110','101','110'],
+   'C':['011','100','100','100','011'],'D':['110','101','101','101','110'],
+   'E':['111','100','110','100','111'],'F':['111','100','110','100','100'],
+   'G':['011','100','101','101','011'],'H':['101','101','111','101','101'],
+   'I':['111','010','010','010','111'],'K':['101','101','110','101','101'],
+   'L':['100','100','100','100','111'],'M':['101','111','111','101','101'],
+   'N':['110','101','101','101','101'],'O':['010','101','101','101','010'],
+   'P':['110','101','110','100','100'],'R':['110','101','110','101','101'],
+   'S':['011','100','010','001','110'],'T':['111','010','010','010','010'],
+   'U':['101','101','101','101','111'],'V':['101','101','101','101','010'],
+   'W':['101','101','111','111','101'],'X':['101','101','010','101','101'],
+   'Z':['111','001','010','100','111'],'%':['101','001','010','100','101'],
+   '+':['000','010','111','010','000'],'-':['000','000','111','000','000'],
+   '/':['001','001','010','100','100'],'.':['000','000','000','010','000'],
+   '<':['001','011','111','011','001'],'|':['010','010','010','010','010'],
+   ' ':['000','000','000','000','000']
+  };
+  function ctx(c){var x=c.getContext('2d');x.fillStyle='#05070a';
+    x.fillRect(0,0,c.width,c.height);return x;}
+  function px(x,cx,cy,c){x.fillStyle='rgba(198,225,255,'+(c/15)+')';x.fillRect(cx,cy,1,1);}
+  function rect(x,x0,y0,w,h,c){x.fillStyle='rgba(198,225,255,'+(c/15)+')';x.fillRect(x0,y0,w,h);}
+  function txt(x,s,cx,cy,c,sc){sc=sc||1;
+    for(var i=0;i<s.length;i++){var g=F[s[i]]||F[' '];
+      for(var r=0;r<5;r++)for(var q=0;q<3;q++)if(g[r][q]==='1')
+        rect(x,cx+i*4*sc+q*sc,cy+r*sc,sc,sc,c);}}
+
+  // 11x5 pixel fish, two tail-flick frames
+  var FISH=[
+    [(1<<2)|(1<<3)|(1<<4)|(1<<9),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<8)|(1<<9),
+     0x1FF,
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<8)|(1<<9),
+     (1<<2)|(1<<3)|(1<<4)|(1<<9)],
+    [(1<<2)|(1<<3)|(1<<4),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<9),
+     0x1FF|(1<<10),
+     (1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<9),
+     (1<<2)|(1<<3)|(1<<4)]];
+  function fish(x,x0,y0,frame,col){
+    var rows=FISH[frame];
+    for(var r=0;r<5;r++)for(var c=0;c<11;c++)
+      if(rows[r]&(1<<c))px(x,x0+c,y0+r,col||10);
+    px(x,x0+2,y0+1,1);
+  }
+
+  // ---- hero: the module display (full-height lanes, detail at right) ----
+  var tracks=[
+    {len:16,rate:'X1', pos:5, src:0,mute:false,pat:[2,0,3,1,0,4,2,0,1,3,0,2,4,0,3,1]},
+    {len:12,rate:'/2', pos:2, src:1,mute:false,pat:[1,0,0,2,0,1,0,0,3,0,1,0,0,0,0,0]},
+    {len:16,rate:'X2', pos:11,src:0,mute:false,pat:[3,2,0,4,1,0,2,3,0,1,4,2,0,3,1,0]},
+    {len:8, rate:'X1', pos:5, src:0,mute:false,pat:[4,0,2,0,3,0,1,2,0,0,0,0,0,0,0,0]},
+    {len:16,rate:'/4', pos:1, src:0,mute:true, pat:[2,3,0,1,0,2,4,0,3,0,1,2,0,4,0,3]},
+    {len:5, rate:'X1', pos:0, src:0,mute:false,pat:[1,3,0,2,4,0,0,0,0,0,0,0,0,0,0,0]},
+    {len:32,rate:'/2', pos:21,src:3,mute:false,pat:[]},
+    {len:64,rate:'X1', pos:47,src:0,mute:false,pat:[]}
+  ];
+  function longPat(i,s){var r=((s*73856093)^((i+1)*19349663))>>>0;
+    return (r%100<68)?1+((r>>4)%4):0;}
+
+  function drawHero(frame){
+    var c=document.getElementById('hero'),x=ctx(c);
+    for(var i=0;i<8;i++){
+      var t=tracks[i],y=1+i*8,sel=(i===2);
+      var base=t.mute?4:(sel?15:9);
+      if(sel)rect(x,0,y,2,7,15);
+      txt(x,String(i+1),4,y+1,sel?15:(t.mute?4:8));
+      var strip=170,cells=(t.len<=16)?16:t.len,cw=strip/cells,bw=Math.max(1,Math.floor(cw*0.82));
+      for(var s=0;s<cells;s++){
+        var cx=10+Math.floor(s*cw);
+        if(s>=t.len){px(x,cx+1,y+4,2);continue;}
+        var isPos=(s===t.pos);
+        if(isPos)rect(x,cx,y,bw,7,5);
+        var h=(t.len<=16)?t.pat[s]:longPat(i,s);
+        if(h===0)rect(x,cx,y+5,bw,1,t.mute?2:3);
+        else rect(x,cx,y+5-h,bw,h+1,isPos?15:base);
+      }
+      if(t.mute)txt(x,'M',183,y+1,12);
+      else if(t.src)txt(x,'<'+t.src,183,y+1,7);
+    }
+    rect(x,190,0,1,64,3);
+    var P=194;
+    txt(x,'T3',P,2,15,2);
+    txt(x,'SHOAL',222,3,7);
+    fish(x,244,10,frame,10);
+    txt(x,'CH 65',P,16,14); txt(x,'DIR PND',P+30,16,8);
+    txt(x,'NT +45',P,24,14); txt(x,'SD 347',P+30,24,8);
+    txt(x,'OC -20',P,32,14); txt(x,'EV 5',P+30,32,8);
+    txt(x,'RATE X2 LEN 16',P,40,9);
+    txt(x,'OCT -1',P,48,9); txt(x,'TR 2',P+34,48,9);
+    txt(x,'C NMIN',P,56,7);
+  }
+
+  // ---- divider strips: one fish out for a swim ----
+  function drawDividers(){
+    var divs=document.querySelectorAll('canvas.divider');
+    for(var d=0;d<divs.length;d++){
+      var c=divs[d],x=ctx(c),i=+(c.dataset.i||0);
+      for(var sx=0;sx<256;sx+=7){var h=((sx*2654435761+i*97)>>>13)%2;px(x,sx,13-h,2);}
+      var fx=[36,150,86,205][i%4];
+      fish(x,fx,3,i&1,7);
+      px(x,fx+16,3,4); px(x,fx+21,6,3);
+    }
+  }
+
+  drawHero(0); drawDividers();
+
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var f=0;
+    setInterval(function(){f=1-f;drawHero(f);},600);
+  }
+})();
+</script>
